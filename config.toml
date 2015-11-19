@@ -1,18 +1,18 @@
-baseurl = "http://replace-this-with-your-domain.com/"
+baseurl = "http://callme.ninja/"
 languageCode = "en-us"
-title = "hikari"
+title = "Call Me Ninja"
 theme = "hugo-hikari-theme"
 
 [permalinks]
 	post = "/:year/:month/:day/:slug"
 
 [params]
-	name = "Your name"
-	description = "Describe your website"
-	copyright = "POWERED BY [HUGO](//gohugo.io) - THEME: [HIKARI](//github.com/digitalcraftsman/hugo-hikari-theme) - © JOHN DOE"
+	name = "Call Me Ninja"
+	description = "Stuff as I see it."
+	copyright = "POWERED BY [HUGO](//gohugo.io) - THEME: [HIKARI](//github.com/digitalcraftsman/hugo-hikari-theme) - © Shuaib Yunus"
 
 	# Enable comments by entering your Disqus shortname
-	disqusshortname = "spf13"
+	disqusshortname = "shuaibiyy"
 	# Enable Google Analytics by entering your tracking code
 	googleanalytics = ""
 
@@ -25,15 +25,15 @@ theme = "hugo-hikari-theme"
 
 [params.offcanvas]
 	# Menu items
-	title = "Hi, I'm John Doe"
-	bio = "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ex, pariatur!"
+	title = "Hi, I'm Shuaib"
+	bio = "Impostor and Tinkerer"
 	subscribe = "Subscribe"
 	followme = "Follow me on"
 
 	[[params.offcanvas.socialnetworks]]
 		name = "Github"
-		url = "//github.com/spf13"
+		url = "//github.com/shuaibiyy"
 
 	[[params.offcanvas.socialnetworks]]
 		name = "Twitter"
-		url = "//twitter.com/spf13"
+		url = "//twitter.com/shuaibiyy"
