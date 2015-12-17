@@ -1,20 +1,20 @@
 # Site settings
-baseurl = "http://callme.ninja/"
+baseurl = "http://replace-this-with-your-domain.com/"
 languageCode = "en-us"
 title = "Hugo Cactus Theme"
 theme = "hugo-cactus-theme"
 # Enter your tracking code to enable Google Analytics
 googleAnalytics = ""
 # Disable comments by leaving disqusShortname empty
-disqusShortname = "shuaibyunus"
+disqusShortname = "spf13"
 
 [params]
-	name = "Shuaib Yunus"
-	description = "."
-	bio = "Tamperer - Dude"
+	name = "Mr. Hugo"
+	description = "Describe your website"
+	bio = "Blogger - Programmer - Gopher"
 	# Enter optionally your twitter account
-	twitter = "shuaibiyy"
-	enableRSS = false
+	twitter = "Your Twitter account"
+	enableRSS = true
 
 	# The variables below are optionally too and can be used to
 	# translate or customize each string of the theme.
@@ -29,17 +29,20 @@ disqusShortname = "shuaibyunus"
 	readMore = ""
 	copyright = ""
 	# Sharing options and author information in posts
-	aboutAuthor = "Me. We."
-	tweet = "@shuaibiyy"
+	aboutAuthor = "I'm an enthusiastic gopher."
+	tweet = ""
 	share = ""
 	# 404 page
-	title404 = "I don't know what to tell ya!"
+	title404 = ""
 	subtitle404 = ""
 
     # Social icons style - circle, rounded, or empty
-    socialIconStyle = "rounded"
+    socialIconStyle = "circle"
 
 # Add additional social link entries underneath
 [social]
-    twitter  = "https://www.twitter.com/shuaibiyy"
-    github   = "https://www.github.com/shuaibiyy"
+    twitter  = "https://www.twitter.com/"
+    facebook = "https://www.facebook.com/"
+    github   = "https://www.github.com/"
+    dribble  = "https://www.dribbble.com/"
+
