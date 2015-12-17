@@ -6,6 +6,3 @@ title = "about"
 +++
 
 # Call Me Ninja
-
-## My Way of the Ninja
-
