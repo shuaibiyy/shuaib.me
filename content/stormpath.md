@@ -1,5 +1,9 @@
++++
+date = "2016-02-06T01:31:31+08:00"
+description = ""
+title = "Stormpath"
 
-## Stormpath
++++
 
 We had the need to setup user management in an [project](http://distinction.ng) I was working recently. User management being an after-thought, coupled with a hard deadline looming over us, we set out to bang something out in no-time. I had heard about Stormpath from an episode of JavaScript Jabber where they had a Stormpath engineer as the main guest. I had also checked out Auth0 after seeing their excellent blog post on implementing authentication in [React](https://auth0.com/blog/2015/04/09/adding-authentication-to-your-react-flux-app/) and [code samples](https://github.com/auth0) on authenticating Single Page Applications (SPA). After giving some thought at the pricing options for both Stormpath and Auth0, we decided to go with Stormpath.
 
