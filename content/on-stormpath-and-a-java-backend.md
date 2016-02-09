@@ -1,7 +1,7 @@
 +++
 date = "2016-02-09T15:35:23+08:00"
 description = ""
-title = "On Stormpath and JavaEE"
+title = "On Stormpath and a Java Backend"
 
 +++
 
