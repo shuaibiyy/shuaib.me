@@ -254,6 +254,9 @@ Next, we create the actions that get fired when we submit our forms:
       // hence even a failure cannot be trusted.
       return register(credentials).then(this.completed).catch(this.completed)
     })
+    
+    export default Actions
+
 We use the [Fetch API](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) to make calls to our API using [isomorphic fetch](https://github.com/matthew-andrews/isomorphic-fetch):
 
     // endpoints.js
