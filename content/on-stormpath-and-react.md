@@ -6,13 +6,13 @@ date = "2016-02-09T15:35:23+08:00"
 
 In a [previous post](http://callme.ninja/on-stormpath-and-a-java-backend/), I went through how we hooked up Stormpath to our Java backend. In this post, I'll go through how we got it working with our React front-end.
 
-From a [previous post](http://callme.ninja/on-stormpath/):
+In a [previous post](http://callme.ninja/on-stormpath/), I explained our rationale for not using the Stormpath React SDK:
 
 > For front-end applications, Stormpath provides the Stormpath React SDK, a fairly new project that tries to do a lot of the work required when adding authentication to your app. In our project, however, we opted not to use the SDK. The SDK’s code was fairly small and simple, so we decided it would be more productive in the long run to implement a narrower set of functionalities tailored to our use-case and consistent with our app’s design.
 
-With a REST API backend and a REST client as is our case, it is an established pattern to expect a server response with a payload in a format such as JSON, XML, etc. The Stormpath Servlet Plugin however, responds with paths to server-rendered views for most of its endpoints. This works well if you are rendering your views from the server-side. The URIs to the response views are [configurable](https://docs.stormpath.com/java/servlet-plugin/registration.html#verify-next-uri), which makes things a little better. Though not in our case because we prefer containing the view routing logic within the client. Consequently, were ended up with an almost fire-and-forget model because we couldn't rely on the response from the server, and we didn't want the client to redirect to a server-specified URI.
+With a REST API backend and a REST client as is our case, it is an established pattern to expect a server response with a payload in a format such as JSON, XML, etc. The Stormpath Servlet Plugin however, responds with paths to server-rendered views for some of its endpoints. This works well if you are rendering your views on the server-side. The URIs to the views returned are [configurable](https://docs.stormpath.com/java/servlet-plugin/registration.html#verify-next-uri), which didn't make much of a difference for us because we prefer containing the view routing logic within the client. Consequently and hopefully temporarily, we ended up with a fire-and-forget model because we couldn't rely on the response from the server, and we didn't want the client to redirect to a server-specified URI. But I digress, the issues we faced with the client-server integration are a topic for another post.
 
-I'll run you through the code required to implement some basic authentication features in a React client. The code samples use Reflux, however, they should be easily adaptable to a different flux library.
+I'll run you through the code required to implement some basic authentication features in a React app using Stormpath. The illustration code is written in ES6, and uses the Reflux flux library. Nonetheless, the code should be easily adaptable to ES5 and/or a different flux library.
 
 First, let's create a login form:
 
@@ -39,7 +39,7 @@ First, let's create a login form:
       }
        
       static get propTypes () {
-	    // History is from react-router.
+	    // History is provided by react-router.
         return {
           history: React.PropTypes.object.isRequired
         }
@@ -90,7 +90,7 @@ First, let's create a login form:
     
     export default LoginForm
 
-The component above uses [react-mixin's](https://github.com/brigand/react-mixin) to make decorators work with React ES6 components. You'll need to use Babel 5.x or a [plugin](https://github.com/loganfsmyth/babel-plugin-transform-decorators-legacy) if you are on Babel 6, because the unratified decorator syntax is no longer supported.
+The component above uses the [react-mixin](https://github.com/brigand/react-mixin) library to make decorators work with React ES6 components. You'll need to use Babel 5.x or a [plugin](https://github.com/loganfsmyth/babel-plugin-transform-decorators-legacy) if you are on Babel 6, because the unratified decorator syntax is no longer supported.
 
 Next we'll create a registration form:
 
@@ -230,34 +230,28 @@ Next we'll create a registration form:
     
     export default RegistrationForm
 
-Next, we create the actions that get fired when we submit our forms:
+Next, we create the actions that get fired when forms are submitted:
 
     // actions.js
     import Reflux from 'reflux'
-    import { login, logout, register } from './endpoints'
+    import { login, register } from './endpoints'
     
     const Actions = Reflux.createActions({
       login: {children: ['completed', 'failed']},
-      logout: {children: ['completed', 'failed']},
-      userProfile: {children: ['completed', 'failed']}
       register: {children: ['completed']},
     })
     Actions.login.listen(function (credentials) {
       return login(credentials).then(this.completed).catch(this.failed)
     })
-    Actions.logout.listen(function () {
-      return logout().then(this.completed).catch(this.failed)
-    })
     Actions.register.listen(function (credentials) {
       this.progressed()
-      // Register does not return a proper response,
-      // hence even a failure cannot be trusted.
+      // Register returns a view, not a JSON response.
       return register(credentials).then(this.completed).catch(this.completed)
     })
     
     export default Actions
 
-We use the [Fetch API](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) to make calls to our API using [isomorphic fetch](https://github.com/matthew-andrews/isomorphic-fetch):
+We use the [Fetch API](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) to make calls to our API using [isomorphic fetch](https://github.com/matthew-andrews/isomorphic-fetch), but you can easily replace it with XHR or any of its wrapper libraries:
 
     // endpoints.js
     import fetch from 'isomorphic-fetch'
@@ -286,19 +280,14 @@ We use the [Fetch API](https://developer.mozilla.org/en/docs/Web/API/Fetch_API) 
       })
     }
     
-    export function logout () {
-      return fetch(`${API_URL}/logout`, {
-        credentials: 'include'
-      })
-    }
-You'll notice that I construct the request body, as in: `grant_type=password&username=${credentials.username}&password=${credentials.password}`. I do so because for reasons I've yet explore, the Stormpath endpoints don't like bodies formed using FormData, like so:
+You'll notice that I construct the request body, as in: `grant_type=password&username=${credentials.username}&password=${credentials.password}`. I do so because for reasons I've yet to explore, the Stormpath endpoints don't like bodies formed using FormData, as in:
 
     let formData = new FormData()
     formData.append("username", credentials.username)
     formData.append("password", credentials.password)
     formData.append("grant_type", "password")
 
-The final steps are just a matter of listening for actions in your store, and triggering state changes in your components.
+The final step is just a matter of listening for actions in your store, and triggering state changes in your components.
 
     //store.js
     import Reflux from 'reflux'
@@ -315,18 +304,15 @@ The final steps are just a matter of listening for actions in your store, and tr
     
       onRegisterCompleted: function () {
         this.trigger({newlyRegistered: true})
-      },
-    
-      onLogoutCompleted: function (response) {
-        if (response.ok) {
-          this.trigger({loggedIn: false})
-        }
       }
     })
     
     export default Store
-I ran into a number of issues while trying to get this working, and I'd advise that you take note of the following:
 
- 1. The [fetch standard](https://fetch.spec.whatwg.org/) is your friend. 
+That's it.
+
+Unrelated to React and Stormpath, I ran into a number of issues while using the Fetch API, and here are my tips for saving yourself some valuable time:
+
+ 1. The [Fetch Standard](https://fetch.spec.whatwg.org/) is your friend. 
  2. `Credentials: “include”` is important.
  3. Understand the difference between `cors` and `no-cors`.
