@@ -11,7 +11,7 @@ disqusShortname = "callmeninja"
 [params]
 	name = "Shuaib Yunus"
 	description = "."
-	bio = "Tamperer - Dude"
+	bio = "Tinkerer - Dude"
 	# Enter optionally your twitter account
 	twitter = "shuaibiyy"
 	enableRSS = false
@@ -29,7 +29,7 @@ disqusShortname = "callmeninja"
 	readMore = ""
 	copyright = ""
 	# Sharing options and author information in posts
-	aboutAuthor = "Me. We."
+	aboutAuthor = "Simplicity is King."
 	tweet = "@shuaibiyy"
 	share = ""
 	# 404 page
