@@ -11,7 +11,7 @@ com.stormpath.sdk.servlet.filter.oauth.OauthException: A secure HTTPS connection
 ```
 A look at the request headers from clients showed that `X-Forwarded-Proto` headers were getting set. The `X-Forwarded-Proto` header is responsible for informing the server of the protocol at the origin where a request was initiated. In our case, we wanted Glassfish to treat connections that had `X-Forwarded-Proto` header values of `https` as secured, so we configured it to do so. That however, still didn't solve the problem.
 
-After getting in touch with the excellent support folks at Stormpath, they stated that I was facing the issue described in this [Github issue](https://github.com/stormpath/stormpath-sdk-java/issues/139).
+After getting in touch with the excellent support folks at Stormpath, they stated that we were facing the issue described in this [Github issue](https://github.com/stormpath/stormpath-sdk-java/issues/139).
 
 They also offered the following workaround:
 
@@ -29,7 +29,9 @@ They also offered the following workaround:
 	```
 
 2. In stormpath.properties add:
-	```stormpath.web.accessToken.authorizer.secure.resolver = com.mycompany.resolver.SecureResolverFactory```
+	```bash
+	stormpath.web.accessToken.authorizer.secure.resolver = com.mycompany.resolver.SecureResolverFactory
+	```
 
 3. Create these Resolvers:
 	```java
@@ -68,4 +70,4 @@ They also offered the following workaround:
 	    }
 	}
 	```
-That's it, Stormpath now considers a request with a `X-Forwarded-Proto`  value of `https` as secured.
+That's it, Stormpath now considers requests with `X-Forwarded-Proto`  values of `https` as secured.
