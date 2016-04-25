@@ -1,7 +1,7 @@
 # Site settings
 baseurl = "http://callme.ninja/"
 languageCode = "en-us"
-title = "Personal Blog"
+title = "Code | Infrastructure"
 theme = "hugo-cactus-theme"
 # Enter your tracking code to enable Google Analytics
 googleAnalytics = ""
@@ -11,7 +11,7 @@ disqusShortname = "callmeninja"
 [params]
 	name = "Shuaib Yunus"
 	description = "."
-	bio = "Tinkerer - Dude"
+	bio = "Developer - Tinkerer"
 	# Enter optionally your twitter account
 	twitter = "shuaibiyy"
 	enableRSS = false
@@ -37,7 +37,7 @@ disqusShortname = "callmeninja"
 	subtitle404 = ""
 
     # Social icons style - circle, rounded, or empty
-    socialIconStyle = "rounded"
+    socialIconStyle = "circle"
 
 # Add additional social link entries underneath
 [social]
