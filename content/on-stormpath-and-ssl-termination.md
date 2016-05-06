@@ -1,5 +1,5 @@
 +++
-title = "Fixing an SSL Termination in Stormpath"
+title = "An SSL Termination Issue in Stormpath"
 description = ""
 date = "2016-04-13T14:57:45+08:00"
 +++
