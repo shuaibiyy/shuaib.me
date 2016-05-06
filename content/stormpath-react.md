@@ -1,5 +1,5 @@
 +++
-title = "On Stormpath and React"
+title = "Integrating a React Frontend with Stormpath"
 description = ""
 date = "2016-02-09T15:35:23+08:00"
 +++
