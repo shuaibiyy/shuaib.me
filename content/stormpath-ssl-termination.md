@@ -1,5 +1,5 @@
 +++
-title = "On Stormpath and SSL Termination"
+title = "An SSL Termination Issue in Stormpath"
 description = ""
 date = "2016-04-13T14:57:45+08:00"
 +++
@@ -11,9 +11,7 @@ com.stormpath.sdk.servlet.filter.oauth.OauthException: A secure HTTPS connection
 ```
 A look at the request headers from clients showed that `X-Forwarded-Proto` headers were getting set. The `X-Forwarded-Proto` header is responsible for informing the server of the protocol at the origin where a request was initiated. In our case, we wanted Glassfish to treat connections that had `X-Forwarded-Proto` header values of `https` as secured, so we configured it to do so. That however, still didn't solve the problem.
 
-After getting in touch with the excellent support folks at Stormpath, they stated that we were facing the issue described in this [Github issue](https://github.com/stormpath/stormpath-sdk-java/issues/139).
-
-They also offered the following workaround:
+After some time spent in frustration and consideration of Stormpath alternatives, I found this [Github issue](https://github.com/stormpath/stormpath-sdk-java/issues/139), which led to the following workaround:
 
 1. Create this Factory:
 	```java
