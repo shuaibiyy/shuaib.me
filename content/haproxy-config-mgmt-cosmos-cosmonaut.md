@@ -82,11 +82,11 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 	*Defaults to `host` mode.*
 * **serviceName**: name of service the containers belong to.
 * **predicate**: value used along with mode to determine which service a request will be forwarded to. 
-`Path` mode example: 
+In `Path` mode, the predicate looks like: 
 	
 			acl <cluster> url_beg /<predicate>
 		
-	`Host` mode example:
+	In `Host` mode:
 	
 			acl <cluster> hdr(host) -i <predicate>
 		
