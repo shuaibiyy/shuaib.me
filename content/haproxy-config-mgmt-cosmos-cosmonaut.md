@@ -15,7 +15,7 @@ Deployment solutions for all sorts of application architectures are pretty commo
 * [Cosmos](https://github.com/shuaibiyy/cosmos) for managing HAProxy configurations.
 * [Cosmonaut](https://github.com/shuaibiyy/cosmonaut) for reloading HAProxy when container lifecycle events occur.
 
-.
+	
 
 ## Terminologies
 A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
@@ -24,9 +24,9 @@ A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
 * A container is a docker container, and an instance of a service is a single container.
 * HAProxy config is a HAProxy configuration file, typically found in a file named `haproxy.cfg`.
 
-.
+	
 
-## Cosmos
+## [Cosmos](https://github.com/shuaibiyy/cosmos)
 Cosmos is a tool for managing and generating HAProxy configurations for hosts running services in containers behind a HAProxy. Cosmos receives a payload describing the state of services and returns a HAProxy config that matches that state. It also stores the data of past services, so their configurations persist across future HAProxy configs as long as there are running instances, i.e. containers, of them.
 
 **Sample request to Cosmonaut:**
@@ -140,6 +140,6 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 	    server fds32k4354f 192.168.1.11:80 check cookie JSESSIONID
 
 
-## Cosmonaut
+## [Cosmonaut](https://github.com/shuaibiyy/cosmonaut)
 Cosmonaut is a tool for monitoring docker hosts and reloading their HAProxy configurations. When a docker event relevant to Cosmonaut occurs, it gathers information about the event and current state of services running on the host, and sends that information in a request to Cosmos, which then returns a HAProxy config. Cosmonaut finally reloads the host's HAProxy with the config it received. Currently, Cosmonaut expects HAProxy to be running in a [container](https://github.com/rstiller/dockerfiles/tree/master/haproxy), and it updates it via a docker exec command.
 
