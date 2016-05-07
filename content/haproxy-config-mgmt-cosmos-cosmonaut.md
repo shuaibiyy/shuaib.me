@@ -9,11 +9,12 @@ Deployment solutions for all sorts of application architectures are pretty commo
 
 * [Amazon ECS](https://aws.amazon.com/documentation/ecs/) for orchestration and scheduling.
 * [Docker](https://www.docker.com/what-docker) mainly because of ECS.
-* [HAProxy]() for load balancing and URL routing.
+* [HAProxy](http://www.haproxy.org/) for load balancing and URL routing.
 * [Weave NET](https://www.weave.works/products/weave-net/) to provide an overlay network for Docker; bridging together multiple hosts and allowing containers to find each other.
 * [Terraform](https://www.terraform.io/) for provisioning the entire infrastructure.
 * [Cosmos](https://github.com/shuaibiyy/cosmos) for managing HAProxy configurations.
 * [Cosmonaut](https://github.com/shuaibiyy/cosmonaut) for reloading HAProxy when container lifecycle events occur.
+
 
 ## Terminologies
 A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
@@ -21,6 +22,7 @@ A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
 * Service: A service is a name given to containers that serve the same purpose. Containers are grouped as a service using an environment variable.
 * A container is a docker container, and an instance of a service is a single container.
 * HAProxy config is a HAProxy configuration file, typically found in a file named `haproxy.cfg`.
+
 
 ## Cosmos
 Cosmos is a tool for managing and generating HAProxy configurations for hosts running services in containers behind a HAProxy. Cosmos receives a payload describing the state of services and returns a HAProxy config that matches that state. It also stores the data of past services, so their configurations persist across future HAProxy configs as long as there are running instances, i.e. containers, of them.
