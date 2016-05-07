@@ -15,7 +15,7 @@ Deployment solutions for all sorts of application architectures are pretty commo
 * [Cosmos](https://github.com/shuaibiyy/cosmos) for managing HAProxy configurations.
 * [Cosmonaut](https://github.com/shuaibiyy/cosmonaut) for reloading HAProxy when container lifecycle events occur.
 
-
+.
 
 ## Terminologies
 A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
@@ -24,7 +24,7 @@ A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
 * A container is a docker container, and an instance of a service is a single container.
 * HAProxy config is a HAProxy configuration file, typically found in a file named `haproxy.cfg`.
 
-
+.
 
 ## Cosmos
 Cosmos is a tool for managing and generating HAProxy configurations for hosts running services in containers behind a HAProxy. Cosmos receives a payload describing the state of services and returns a HAProxy config that matches that state. It also stores the data of past services, so their configurations persist across future HAProxy configs as long as there are running instances, i.e. containers, of them.
@@ -33,8 +33,7 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 
 	{
 	  "tableName": "astro",
-	  "runningServices": [
-	    {
+	  "runningServices": [{
 	      "serviceName": "app1",
 	      "id": "a23nj53h3j4",
 	      "ip": "192.168.1.9:80"
@@ -45,16 +44,29 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 	      "ip": "192.168.1.8:80"
 	    }
 	  ],
-	  "candidateServices": [
-	    {
+	  "candidateServices": [{
 	      "serviceName": "app1",
 	      "configMode": "host",
 	      "predicate": "first.example.com",
 	      "cookie": "JSESSIONID",
-	      "containers": [
-	        {
+	      "containers": [{
 	          "id": "a23nj53h3j4",
 	          "ip": "192.168.1.9:80"
+	        }
+	      ]
+	    },
+	    {
+	      "serviceName": "app2",
+	      "configMode": "host",
+	      "predicate": "second.example.com",
+	      "cookie": "JSESSIONID",
+	      "containers": [{
+	          "id": "das843j3h3k",
+	          "ip": "192.168.1.10:80"
+	        },
+	        {
+	          "id": "fds32k4354f",
+	          "ip": "192.168.1.11:80"
 	        }
 	      ]
 	    }
@@ -77,12 +89,12 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 **HAProxy config generated from request:**
 
 	global
-	    log 127.0.0.1   local0
-	    log 127.0.0.1   local1 notice
-	    maxconn 4096
-	    user haproxy
-	    group haproxy
-	    daemon
+	   log 127.0.0.1   local0
+	   log 127.0.0.1   local1 notice
+	   maxconn 4096
+	   user haproxy
+	   group haproxy
+	   daemon
 	
 	defaults
 	    log global
@@ -103,6 +115,9 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 	    acl app1 hdr(host) -i first.example.com
 	    use_backend app1 if app1
 	    
+	    acl app2 hdr(host) -i second.example.com
+	    use_backend app2 if app2
+	    
 	
 	# Define backends
 	
@@ -113,6 +128,16 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 	    cookie JSESSIONID prefix nocache
 	    
 	    server a23nj53h3j4 192.168.1.9:80 check cookie JSESSIONID
+	    
+	backend app2
+	    mode http
+	    balance roundrobin
+	    option forwardfor
+	    cookie JSESSIONID prefix nocache
+	    
+	    server das843j3h3k 192.168.1.10:80 check cookie JSESSIONID
+	    
+	    server fds32k4354f 192.168.1.11:80 check cookie JSESSIONID
 
 
 ## Cosmonaut
