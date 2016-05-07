@@ -78,17 +78,15 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 * **tableName**: name of DynamoDB table where configurations will be stored.
 * **runningServices**: instances of services running within the weave network.
 * **candidateServices**:  instances that are new to the weave network and do not yet exist in the HAProxy config.
-* **configMode**: type of routing. It can be either `path` or `host`.
-	* In `path` mode, the URL path is used to determine which backend to forward the request to.
-	* In `host` mode, the HTTP host header is used to determine which backend to forward the request to.
+* **configMode**: type of routing. It can be either `path` or `host`. In `path` mode, the URL path is used to determine which backend to forward the request to. In `host` mode, the HTTP host header is used to determine which backend to forward the request to.
 	*Defaults to `host` mode.*
 * **serviceName**: name of service the containers belong to.
-* **predicate**: value used along with mode to determine which service a request will be forwarded to.
-	* `path` mode example: 
+* **predicate**: value used along with mode to determine which service a request will be forwarded to. 
+`Path` mode example: 
 	
 			acl <cluster> url_beg /<predicate>
 		
-	* `host` mode example:
+	`Host` mode example:
 	
 			acl <cluster> hdr(host) -i <predicate>
 		
