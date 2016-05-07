@@ -15,7 +15,7 @@ Deployment solutions for all sorts of application architectures are pretty commo
 * [Cosmos](https://github.com/shuaibiyy/cosmos) for managing HAProxy configurations.
 * [Cosmonaut](https://github.com/shuaibiyy/cosmonaut) for reloading HAProxy when container lifecycle events occur.
 
-	
+****************************************
 
 ## Terminologies
 A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
@@ -24,7 +24,7 @@ A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
 * A container is a docker container, and an instance of a service is a single container.
 * HAProxy config is a HAProxy configuration file, typically found in a file named `haproxy.cfg`.
 
-	
+****************************************
 
 ## [Cosmos](https://github.com/shuaibiyy/cosmos)
 Cosmos is a tool for managing and generating HAProxy configurations for hosts running services in containers behind a HAProxy. Cosmos receives a payload describing the state of services and returns a HAProxy config that matches that state. It also stores the data of past services, so their configurations persist across future HAProxy configs as long as there are running instances, i.e. containers, of them.
