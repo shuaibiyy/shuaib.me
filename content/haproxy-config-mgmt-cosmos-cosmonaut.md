@@ -74,6 +74,7 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 	}
 
 **Explanation:**
+
 * **tableName**: name of DynamoDB table where configurations will be stored.
 * **runningServices**: instances of services running within the weave network.
 * **candidateServices**:  instances that are new to the weave network and do not yet exist in the HAProxy config.
@@ -83,8 +84,14 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 	*Defaults to `host` mode.*
 * **serviceName**: name of service the containers belong to.
 * **predicate**: value used along with mode to determine which service a request will be forwarded to.
-	* `path` mode example: `acl <cluster> url_beg /<predicate>`.
-	* `host` mode example: `acl <cluster> hdr(host) -i <predicate>`.
+	* `path` mode example: 
+	
+			acl <cluster> url_beg /<predicate>
+		
+	* `host` mode example:
+	
+			acl <cluster> hdr(host) -i <predicate>
+		
 * **cookie**: name of cookie to be used for sticky sessions. If not defined, sticky sessions will not be configured.
 * **containers**: key-value pairs of container ids and their corresponding IP addresses.
 
