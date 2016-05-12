@@ -12,6 +12,9 @@ Deployment solutions for all sorts of application architectures are pretty commo
 * [HAProxy](http://www.haproxy.org/) for load balancing and URL routing.
 * [Weave NET](https://www.weave.works/products/weave-net/) to provide an overlay network for Docker; bridging together multiple hosts and allowing containers to find each other.
 * [Terraform](https://www.terraform.io/) for provisioning the entire infrastructure.
+
+I also wrote and added the following tools to the toolset to fulfill the requirements of a fully automated deployment infrastructure:
+
 * [Cosmos](https://github.com/shuaibiyy/cosmos) for managing HAProxy configurations.
 * [Cosmonaut](https://github.com/shuaibiyy/cosmonaut) for reloading HAProxy when container lifecycle events occur.
 
