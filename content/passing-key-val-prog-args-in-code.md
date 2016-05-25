@@ -15,7 +15,7 @@ terraform remote config \
     -backend-config="region=us-east-1"
 ```
 In my code, I wrote the go-sh command like this:
-```golang
+```go
 sh.Command("terraform", "remote", "config",
 	"-backend=s3", "-backend-config='bucket=jenkins-bucket'",
 	"-backend-config='key=jenkins/terraform.tfstate'",
@@ -30,7 +30,7 @@ options, these are set using the `-backend-config` flag. Example:
 -backend-config="name=foo" to set the `name` configuration
 ```
 The Terraform command works perfectly when run the command line. I spent a couple of hours trying stuff out. So it turns out that some programs are picky about how their options are specified and Terraform is one of them. Breaking up the arguments like below from "key='value'" to "key", "value" solves the problem:
-```golang
+```go
 sh.Command("terraform", "remote", "config", "-backend=s3",
 	"-backend-config", "bucket=jenkins-bucket",
 	"-backend-config", "key=jenkins/terraform.tfstate",
