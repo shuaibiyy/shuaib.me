@@ -1,5 +1,5 @@
 +++
-title = "Passing Key-value Program Arguments in Code"
+title = "Passing Key-value Program Arguments to Go Programs in Code"
 description = "Trouble Passing Arguments to Terraform's Remote Config Command"
 date = "2016-05-25T21:16:07+08:00"
 +++
@@ -29,7 +29,7 @@ If the error message above mentions requiring or modifying configuration
 options, these are set using the `-backend-config` flag. Example:
 -backend-config="name=foo" to set the `name` configuration
 ```
-The Terraform command works perfectly when run the command line. I spent a couple of hours trying stuff out. So it turns out that some programs are picky about how their options are specified and Terraform is one of them. Breaking up the arguments like below from "key='value'" to "key", "value" solves the problem:
+The Terraform command works perfectly when run the command line. I spent a couple of hours trying stuff out. Terraform is a [Go](https://golang.org/) program, and it turns out that Go programs accept flags as key-value pairs(except for booleans) separated by equals sign ("="). Breaking up the arguments like below from "key='value'" to "key", "value" solves the problem:
 ```go
 sh.Command("terraform", "remote", "config", "-backend=s3",
 	"-backend-config", "bucket=jenkins-bucket",
