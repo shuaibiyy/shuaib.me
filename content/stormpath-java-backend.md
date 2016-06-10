@@ -5,7 +5,7 @@ title = "Using Stormpath on a Java Backend"
 
 +++
 
-In a [previous post](http://callme.ninja/stormpath/), I talked about our motivation for picking Stormpath as the user management solution for [Distinction.ng](https://distinction.ng). To recap, our app is built using Java on the backend and React on the front-end. In this post, I'll go through how we got Stormpath working on our Java backend.
+In a [previous post](http://shuaib.me/stormpath/), I talked about our motivation for picking Stormpath as the user management solution for [Distinction.ng](https://distinction.ng). To recap, our app is built using Java on the backend and React on the front-end. In this post, I'll go through how we got Stormpath working on our Java backend.
 
 We are making use of the Stormpath Java Servlet Plugin, which has an excellent [getting started guide](https://docs.stormpath.com/java/servlet-plugin/). The plugin is mostly configuration driven and comes with reasonable defaults. Most of your application-specific configuration should reside in a file called `stormpath.properties`.
 

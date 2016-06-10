@@ -12,6 +12,6 @@ I created a Terraform module that automates provisioning Jenkins on ECS using Te
 
 With everything set up - when builds are run, the ECS plugin starts an ECS task running a docker container from a configured slave template docker image and runs the build on it. ECS tasks are ephemeral, so once the build completes or fails, the task gets cleaned up. Here's an illustration of how everything ties up together:
 
-![ECS Jenkins](https://rawgit.com/shuaibiyy/callme.ninja/master/themes/hugo-cactus-theme/images/ecs-jenkins.png)
+![ECS Jenkins](https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ecs-jenkins.png)
 
 In conclusion, I find that this is a superior approach over spot instances because builds are unlikely to be terminated abruptly and better than long running Jenkins slaves because of their upfront resource commitment. I am yet to see how this works with autoscaling though, as I imagine that if the provisioned EC2 instances don't have the capacity to serve the requested builds, new instances should be spawned up based on the autoscaling policy.

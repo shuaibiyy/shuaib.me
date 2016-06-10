@@ -1,5 +1,5 @@
 # Site settings
-baseurl = "https://callme.ninja/"
+baseurl = "https://shuaib.me/"
 languageCode = "en-us"
 title = "Code | Infrastructure"
 theme = "hugo-cactus-theme"

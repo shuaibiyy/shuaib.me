@@ -4,9 +4,9 @@ description = ""
 date = "2016-02-09T15:35:23+08:00"
 +++
 
-In a [previous post](http://callme.ninja/on-stormpath-and-a-java-backend/), I went through how we hooked up Stormpath to our Java backend. In this post, I'll go through how we got it working with our React front-end.
+In a [previous post](http://shuaib.me/on-stormpath-and-a-java-backend/), I went through how we hooked up Stormpath to our Java backend. In this post, I'll go through how we got it working with our React front-end.
 
-In a [previous post](http://callme.ninja/on-stormpath/), I explained our rationale for not using the Stormpath React SDK:
+In a [previous post](http://shuaib.me/on-stormpath/), I explained our rationale for not using the Stormpath React SDK:
 
 > For front-end applications, Stormpath provides the Stormpath React SDK, a fairly new project that tries to do a lot of the work required when adding authentication to your app. In our project, however, we opted not to use the SDK. The SDK’s code was fairly small and simple, so we decided it would be more productive in the long run to implement a narrower set of functionalities tailored to our use-case and consistent with our app’s design.
 
