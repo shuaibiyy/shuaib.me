@@ -1,5 +1,5 @@
 +++
-title = "HAProxy Configuration Management with Cosmos and Cosmonaut"
+title = "HAProxy Configuration Management with Lambda-Registry and Cosmonaut"
 description = "Enabling Networked and Containerised Deployments Using Dynamic HAProxy Configurations"
 date = "2016-05-08T02:18:18+08:00"
 +++
@@ -15,13 +15,13 @@ Deployment solutions for all sorts of application architectures are pretty commo
 
 I also wrote and added the following tools to the toolset to fulfill the requirements of a fully automated deployment infrastructure:
 
-* [Cosmos](https://github.com/shuaibiyy/cosmos) for managing HAProxy configurations.
+* [Lambda-Registry](https://github.com/shuaibiyy/lambda-registry) for managing HAProxy configurations.
 * [Cosmonaut](https://github.com/shuaibiyy/cosmonaut) for reloading HAProxy when container lifecycle events occur.
 
 ****************************************
 
 ## Terminologies
-A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
+A couple of terms and their meanings as understood by Lambda-Registry and Cosmonaut.
 
 * Service: A service is a name given to containers that serve the same purpose. Containers are grouped as a service using an environment variable.
 * A container is a docker container, and an instance of a service is a single container.
@@ -29,8 +29,8 @@ A couple of terms and their meanings as understood by Cosmos and Cosmonaut.
 
 ****************************************
 
-## [Cosmos](https://github.com/shuaibiyy/cosmos)
-Cosmos is a tool for managing and generating HAProxy configurations for hosts running services in containers behind a HAProxy. Cosmos receives a payload describing the state of services and returns a HAProxy config that matches that state. It also stores the data of past services, so their configurations persist across future HAProxy configs as long as there are running instances, i.e. containers, of them.
+## [Lambda-Registry](https://github.com/shuaibiyy/lambda-registry)
+Lambda-Registry is a tool for managing and generating HAProxy configurations for hosts running services in containers behind a HAProxy. Lambda-Registry receives a payload describing the state of services and returns a HAProxy config that matches that state. It also stores the data of past services, so their configurations persist across future HAProxy configs as long as there are running instances, i.e. containers, of them.
 
 **Sample request to Cosmonaut:**
 
@@ -84,15 +84,15 @@ Cosmos is a tool for managing and generating HAProxy configurations for hosts ru
 * **configMode**: type of routing. It can be either `Path` or `Host`. In `Path` mode, the URL path is used to determine which backend to forward the request to. In `Host` mode, the HTTP host header is used to determine which backend to forward the request to.
 	*Defaults to `host` mode.*
 * **serviceName**: name of service the containers belong to.
-* **predicate**: value used along with mode to determine which service a request will be forwarded to. 
-In `Path` mode, the predicate looks like: 
-	
+* **predicate**: value used along with mode to determine which service a request will be forwarded to.
+In `Path` mode, the predicate looks like:
+
 			acl <cluster> url_beg /<predicate>
-		
+
 	In `Host` mode:
-	
+
 			acl <cluster> hdr(host) -i <predicate>
-		
+
 * **cookie**: name of cookie to be used for sticky sessions. If not defined, sticky sessions will not be configured.
 * **containers**: key-value pairs of container ids and their corresponding IP addresses.
 
@@ -105,7 +105,7 @@ In `Path` mode, the predicate looks like:
 	   user haproxy
 	   group haproxy
 	   daemon
-	
+
 	defaults
 	    log global
 	    mode http
@@ -116,40 +116,39 @@ In `Path` mode, the predicate looks like:
 	    timeout connect 5000
 	    timeout client 50000
 	    timeout server 50000
-	
+
 	# Define frontends
-	
+
 	frontend http
 	    bind :80
-	    
+
 	    acl app1 hdr(host) -i first.example.com
 	    use_backend app1 if app1
-	    
+
 	    acl app2 hdr(host) -i second.example.com
 	    use_backend app2 if app2
-	    
-	
+
+
 	# Define backends
-	
+
 	backend app1
 	    mode http
 	    balance roundrobin
 	    option forwardfor
 	    cookie JSESSIONID prefix nocache
-	    
+
 	    server a23nj53h3j4 192.168.1.9:80 check cookie JSESSIONID
-	    
+
 	backend app2
 	    mode http
 	    balance roundrobin
 	    option forwardfor
 	    cookie JSESSIONID prefix nocache
-	    
+
 	    server das843j3h3k 192.168.1.10:80 check cookie JSESSIONID
-	    
+
 	    server fds32k4354f 192.168.1.11:80 check cookie JSESSIONID
 
 
 ## [Cosmonaut](https://github.com/shuaibiyy/cosmonaut)
-Cosmonaut is a tool for monitoring docker hosts and reloading their HAProxy configurations. When a docker event relevant to Cosmonaut occurs, it gathers information about the event and current state of services running on the host, and sends that information in a request to Cosmos, which then returns a HAProxy config. Cosmonaut finally reloads the host's HAProxy with the config it received. Currently, Cosmonaut expects HAProxy to be running in a [container](https://github.com/rstiller/dockerfiles/tree/master/haproxy), and it updates it via a docker exec command.
-
+Cosmonaut is a tool for monitoring docker hosts and reloading their HAProxy configurations. When a docker event relevant to Cosmonaut occurs, it gathers information about the event and current state of services running on the host, and sends that information in a request to Lambda-Registry, which then returns a HAProxy config. Cosmonaut finally reloads the host's HAProxy with the config it received. Currently, Cosmonaut expects HAProxy to be running in a [container](https://github.com/rstiller/dockerfiles/tree/master/haproxy), and it updates it via a docker exec command.
