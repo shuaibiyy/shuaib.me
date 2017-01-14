@@ -1,7 +1,7 @@
 +++
 date = "2017-01-14T02:42:18+01:00"
-description = ""
-title = "Threading a DB connection through a Go API Server"
+description = "Threading a database connection through a Golang API server"
+title = "Threading a DB Connection through a Go API Server"
 
 +++
 
