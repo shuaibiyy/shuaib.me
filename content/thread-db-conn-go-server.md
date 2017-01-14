@@ -98,7 +98,8 @@ func NewRouter(db *sqlx.DB) *mux.Router {
 	for _, route := range routes {
 		n := strings.ToLower(route.Name)
 		if strings.HasPrefix(n, "secure") { // [3]
-			r.Handle(route.Pattern, auth.SecuredRoute(db, route.Handler)).Methods(route.Method).Name(route.Name)
+					r.Handle(route.Pattern, 
+					auth.SecuredRoute(db, route.Handler)).Methods(route.Method).Name(route.Name)
 		} else {
 			r.Handle(route.Pattern, route.Handler(db)).Methods(route.Method).Name(route.Name)
 		}
