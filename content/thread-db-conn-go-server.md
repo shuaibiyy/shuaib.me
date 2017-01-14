@@ -5,7 +5,7 @@ title = "Threading a DB Connection through a Go API Server"
 
 +++
 
-In this post, I'll walk through code snippets for a Golang service, showing how a database connection can be passed around from its initialisation all the way to HTTP handlers. The service exposes 3 endpoints. It uses the [pgx](https://github.com/jackc/pgx) library for persistence, [gorilla/mux](https://github.com/jackc/pgx) for routing, [urfave/negroni](https://github.com/urfave/negroni) for HTTP middleware, and [Auth0](https://auth0.com/) for authentication.
+In this post, I'll walk through code snippets for a Golang service, showing how a database connection can be passed around from its initialisation all the way to HTTP handlers. There's also a snippet that shows how a custom handler type can be used as a [Negroni](https://github.com/urfave/negroni) middleware. The service exposes 3 endpoints. It uses the [pgx](https://github.com/jackc/pgx) library for persistence, [gorilla/mux](http://www.gorillatoolkit.org/pkg/mux) for routing, Negroni for HTTP middleware, and [Auth0](https://auth0.com/) for authentication.
 
 This first snippet shows some very standard code for database initialisation.
 ```
