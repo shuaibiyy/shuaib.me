@@ -109,8 +109,10 @@ func NewRouter(db *sqlx.DB) *mux.Router {
 
 
 // [4]
-var SecuredRoute = func(db *sqlx.DB, handler HandlerWithDB) http.Handler {
-	return negroni.New(negroni.HandlerFunc(jwtMiddleware.HandlerWithNext), NegroniWrapper(db, handler)) // [5]
+var SecuredRoute = func(db *sqlx.DB,
+				handler HandlerWithDB) http.Handler {
+	return negroni.New(
+	negroni.HandlerFunc(jwtMiddleware.HandlerWithNext), NegroniWrapper(db, handler)) // [5]
 }
 ```
 [3] Of note is the check for the word `secure` in the handler's name. The use of a string to determine if an endpoint should be secured is at best an arguable thing to do. However, for my  inconsequential service, I can still sleep peacefully at night knowing fully well what I've done.
