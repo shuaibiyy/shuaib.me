@@ -81,7 +81,7 @@ var ShowTag = func(dbConn *sqlx.DB) http.HandlerFunc {
 }
 ```
 
-[2] The `SecuredCreateTag` endpoint will require user authentication. The presence of the `Secure` prefix in the handler's name will let the router creation function know that the handler should be wrapped by a higher-order function that enforces authentication.
+[2] The __SecuredCreateTag__ endpoint will require user authentication. The presence of the __Secure__ prefix in the handler's name will let the router creation function know that the handler should be wrapped by a higher-order function that enforces authentication.
 
 The next snippet shows how the routers defined above are used to create a [mux](www.gorillatoolkit.org/pkg/mux) router:
 ```
@@ -98,8 +98,7 @@ func NewRouter(db *sqlx.DB) *mux.Router {
 	for _, route := range routes {
 		n := strings.ToLower(route.Name)
 		if strings.HasPrefix(n, "secure") { // [3]
-					r.Handle(route.Pattern, 
-					auth.SecuredRoute(db, route.Handler)).Methods(route.Method).Name(route.Name)
+			r.Handle(route.Pattern, auth.SecuredRoute(db, route.Handler)).Methods(route.Method).Name(route.Name)
 		} else {
 			r.Handle(route.Pattern, route.Handler(db)).Methods(route.Method).Name(route.Name)
 		}
@@ -109,17 +108,15 @@ func NewRouter(db *sqlx.DB) *mux.Router {
 
 
 // [4]
-var SecuredRoute = func(db *sqlx.DB,
-				handler HandlerWithDB) http.Handler {
-	return negroni.New(
-	negroni.HandlerFunc(jwtMiddleware.HandlerWithNext), NegroniWrapper(db, handler)) // [5]
+var SecuredRoute = func(db *sqlx.DB, handler HandlerWithDB) http.Handler {
+	return negroni.New(negroni.HandlerFunc(jwtMiddleware.HandlerWithNext), NegroniWrapper(db, handler)) // [5]
 }
 ```
-[3] Of note is the check for the word `secure` in the handler's name. The use of a string to determine if an endpoint should be secured is at best an arguable thing to do. However, for my  inconsequential service, I can still sleep peacefully at night knowing fully well what I've done.
+[3] Of note is the check for the word __secure__ in the handler's name. The use of a string to determine if an endpoint should be secured is at best an arguable thing to do. However, for my  inconsequential service, I can still sleep peacefully at night knowing fully well what I've done.
 
-[4] The `SecuredRoute` function uses [Negroni](https://github.com/urfave/negroni) to wrap `jwtmiddleware` from [Go JWT middleware](https://github.com/auth0/go-jwt-middleware) by Auth0. Auth0 is an awesome service for offloading all of your authentication concerns <3
+[4] The __SecuredRoute__ function uses [Negroni](https://github.com/urfave/negroni) to wrap __jwtmiddleware__ from [Go JWT middleware](https://github.com/auth0/go-jwt-middleware) by Auth0. Auth0 is an awesome service for offloading all of your authentication concerns <3
 
-[5] The `New` function from Negroni creates a middleware stack that can only consist of Negroni handlers, and we are passing it a `HandlerWithDB` function Negroni provides a `Wrap` function, but it is only able to wrap `http.Handler` functions. In order to use Negroni, we have write a wrapper for `HandlerWithDB`:
+[5] The __New__ function from Negroni creates a middleware stack that can only consist of Negroni handlers, and we are passing it a __HandlerWithDB__ function Negroni provides a __Wrap__ function, but it is only able to wrap __http.Handler__ functions. In order to use Negroni, we have write a wrapper for __HandlerWithDB__:
 ```
 import (
 	"github.com/jmoiron/sqlx"
@@ -142,7 +139,7 @@ func NegroniWrapper(db *sqlx.DB, handler HandlerWithDB) negroni.Handler {
 	})
 }
 ```
-[6] We also have to define a `ServeHTTP` function that takes a database connection as an additional argument.
+[6] We also have to define a __ServeHTTP__ function that takes a database connection as an additional argument.
 
 Finally, our main function to tie it all together:
 ```
