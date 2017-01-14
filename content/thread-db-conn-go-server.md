@@ -116,7 +116,7 @@ var SecuredRoute = func(db *sqlx.DB, handler HandlerWithDB) http.Handler {
 
 [4] The __SecuredRoute__ function uses [Negroni](https://github.com/urfave/negroni) to wrap __jwtmiddleware__ from [Go JWT middleware](https://github.com/auth0/go-jwt-middleware) by Auth0. Auth0 is an awesome service for offloading all of your authentication concerns <3
 
-[5] The __New__ function from Negroni creates a middleware stack that can only consist of Negroni handlers, and we are passing it a __HandlerWithDB__ function Negroni provides a __Wrap__ function, but it is only able to wrap __http.Handler__ functions. In order to use Negroni, we have write a wrapper for __HandlerWithDB__:
+[5] The __New__ function from Negroni creates a middleware stack that can consist only of Negroni handlers, and we are passing it a __HandlerWithDB__ function, which is our type that does not implement the Negroni __Handler__ interface. Negroni provides a __Wrap__ function, but it is only able to wrap __http.Handler__ functions. In order to use Negroni, we have to write a wrapper for __HandlerWithDB__:
 ```
 import (
 	"github.com/jmoiron/sqlx"
