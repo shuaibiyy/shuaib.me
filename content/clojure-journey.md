@@ -11,5 +11,5 @@ This a live post that I'll update as I continue to explore Clojure. The material
 * Watched Chas Emerick’s video on [Starting Clojure](http://cemerick.com/2012/05/02/starting-clojure/).
 * Watched Expert to Expert: Rich Hickey and Brian Beckman - [Inside Clojure](https://www.youtube.com/watch?v=wASCH_gPnDw).
 * Watched Rich Hickey’s talk: [Clojure, Made Simple](https://www.youtube.com/watch?v=VSdnJDO-xdg).
-* Watched [Clojure Koans Walkthrough](http://www.clojurescreencasts.com/koans-walkthrough/01.html). 
+* Watched [Clojure Koans Walkthrough](http://www.clojurescreencasts.com/koans-walkthrough/01.html).
 * Currently reading [Programming Clojure](https://pragprog.com/book/shcloj2/programming-clojure) by Stuart Halloway and Aaron Bedra.
