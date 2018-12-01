@@ -6,7 +6,7 @@ date = "2018-12-01T00:12:23+01:00"
 
 Adversarial perturbations are special kinds of distortions that trick machine learning and deep learning models into misclassifying their input. Adversarial examples in neural networks were first discovered and explored by Szegedy et al. (2013) in their paper: [Intriguing properties of neural networks](https://arxiv.org/abs/1312.6199). They showed that distortions or perturbations can be learnt from a model, which when applied to its input, cause the model to confidently misclassify the input.
 
-![Take a correctly classified image (left image in both columns), and add a tiny distortion (middle) to fool the ConvNet with the resulting image (right). Taken from http://karpathy.github.io/2015/03/30/breaking-convnets/](https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ostrich.jpeg "Ostrich distortion")
+{{< figure src="https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ostrich.jpeg" caption="Take a correctly classified image (left image in both columns), and add a tiny distortion (middle) to fool the ConvNet with the resulting image (right). Taken from http://karpathy.github.io/2015/03/30/breaking-convnets/." >}}
 
 Adversarial examples are input that have been perturbed. Adversarial training is a technique for improving the defense of a deep learning model against adversarial perturbations by incorporating adversarial examples during model training.
 
