@@ -5,7 +5,7 @@ title = "about me"
 
 +++
 
-I love code, infrastructure and automation. Most of my experience has involved working on both product and infrastructure ends.
+I love building products and infrastructure.
 
 Some of the technologies I’ve worked with and would love to do more of include Clojure, Elm, Golang, Javascript, React, Node.js, Scala, WebSocket, Kubernetes, Terraform, Docker and AWS. I’m interested in most languages that reside in the ivory tower of functional programming, and fun infrastructure problems.
 

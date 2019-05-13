@@ -1,7 +1,7 @@
 # Site settings
 baseurl = "https://shuaib.me/"
 languageCode = "en-us"
-title = "Code | Infrastructure"
+title = "This Is Fine"
 theme = "hugo-cactus-theme"
 # Enter your tracking code to enable Google Analytics.
 googleAnalytics = "UA-77015490-1"
@@ -11,7 +11,7 @@ disqusShortname = "callmeninja"
 [params]
 	name = "Shuaib"
 	description = "."
-	bio = "Developer - Tinkerer"
+	bio = "Engineer - Tinkerer"
 	# Enter optionally your twitter account
 	twitter = "shuaibiyy"
 	enableRSS = false
