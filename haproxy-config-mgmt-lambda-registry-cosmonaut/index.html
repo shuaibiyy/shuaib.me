@@ -1,0 +1,369 @@
+    <!DOCTYPE html>
+<html lang="en-us">
+	<head>
+		<script type="text/javascript">
+			var host = "shuaib.me";
+			if ((host == window.location.host) && (window.location.protocol != "https:"))
+				window.location.protocol = "https";
+		</script>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="Shuaib">
+		<meta name="description" content=".">
+		<meta name="generator" content="Hugo 0.15" />
+		<title>HAProxy Configuration Management with Lambda-Registry and Cosmonaut &middot; This Is Fine</title>
+		<link rel="shortcut icon" href="https://shuaib.me/images/favicon.ico">
+		<link rel="stylesheet" href="https://shuaib.me/css/style.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/highlight.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/monosocialiconsfont.css">
+		<link rel="canonical"  href="https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/" />
+		
+	</head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://shuaib.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		<a href='https://shuaib.me/about'>About</a>
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>HAProxy Configuration Management with Lambda-Registry and Cosmonaut</h1>
+                    <h2 class="headline">May 8, 2016</h2>
+                </header>
+                <section id="post-body">
+                    
+
+<h2 id="background:590f6df10d6bcf152493e39f0a6f759c">Background</h2>
+
+<p>Deployment solutions for all sorts of application architectures are pretty common and well-known these days. A month ago, I set out to find tooling that could handle deploying a couple hundred single-tenanted applications in containers, and I found some, but nothing simple enough for the bus factor I had in mind. I wanted to leverage existing simple tools without buying into configuration heavy machinery. I finally settled on a set of tools that work well, but I had to build what I found to be missing pieces. The set of tools consists of the following:</p>
+
+<ul>
+<li><a href="https://aws.amazon.com/documentation/ecs/">Amazon ECS</a> for orchestration and scheduling.</li>
+<li><a href="https://www.docker.com/what-docker">Docker</a> mainly because of ECS.</li>
+<li><a href="http://www.haproxy.org/">HAProxy</a> for load balancing and URL routing.</li>
+<li><a href="https://www.weave.works/products/weave-net/">Weave NET</a> to provide an overlay network for Docker; bridging together multiple hosts and allowing containers to find each other.</li>
+<li><a href="https://www.terraform.io/">Terraform</a> for provisioning the entire infrastructure.</li>
+</ul>
+
+<p>I also wrote and added the following tools to the toolset to fulfill the requirements of a fully automated deployment infrastructure:</p>
+
+<ul>
+<li><a href="https://github.com/shuaibiyy/lambda-registry">Lambda-Registry</a> for managing HAProxy configurations.</li>
+<li><a href="https://github.com/shuaibiyy/cosmonaut">Cosmonaut</a> for reloading HAProxy when container lifecycle events occur.</li>
+</ul>
+
+<hr />
+
+<h2 id="terminologies:590f6df10d6bcf152493e39f0a6f759c">Terminologies</h2>
+
+<p>A couple of terms and their meanings as understood by Lambda-Registry and Cosmonaut.</p>
+
+<ul>
+<li>Service: A service is a name given to containers that serve the same purpose. Containers are grouped as a service using an environment variable.</li>
+<li>A container is a docker container, and an instance of a service is a single container.</li>
+<li>HAProxy config is a HAProxy configuration file, typically found in a file named <code>haproxy.cfg</code>.</li>
+</ul>
+
+<hr />
+
+<h2 id="lambda-registry-https-github-com-shuaibiyy-lambda-registry:590f6df10d6bcf152493e39f0a6f759c"><a href="https://github.com/shuaibiyy/lambda-registry">Lambda-Registry</a></h2>
+
+<p>Lambda-Registry is a tool for managing and generating HAProxy configurations for hosts running services in containers behind a HAProxy. Lambda-Registry receives a payload describing the state of services and returns a HAProxy config that matches that state. It also stores the data of past services, so their configurations persist across future HAProxy configs as long as there are running instances, i.e. containers, of them.</p>
+
+<p><strong>Sample request to Cosmonaut:</strong></p>
+
+<pre><code>{
+  &quot;table&quot;: &quot;astro&quot;,
+  &quot;running&quot;: [{
+      &quot;serviceName&quot;: &quot;app1&quot;,
+      &quot;id&quot;: &quot;a23nj53h3j4&quot;,
+      &quot;ip&quot;: &quot;192.168.1.9:80&quot;
+    },
+    {
+      &quot;serviceName&quot;: &quot;app1&quot;,
+      &quot;id&quot;: &quot;jk3243j54jl&quot;,
+      &quot;ip&quot;: &quot;192.168.1.8:80&quot;
+    }
+  ],
+  &quot;candidates&quot;: [{
+      &quot;serviceName&quot;: &quot;app1&quot;,
+      &quot;configMode&quot;: &quot;host&quot;,
+      &quot;predicate&quot;: &quot;first.example.com&quot;,
+      &quot;cookie&quot;: &quot;JSESSIONID&quot;,
+      &quot;containers&quot;: [{
+          &quot;id&quot;: &quot;a23nj53h3j4&quot;,
+          &quot;ip&quot;: &quot;192.168.1.9:80&quot;
+        }
+      ]
+    },
+    {
+      &quot;serviceName&quot;: &quot;app2&quot;,
+      &quot;configMode&quot;: &quot;host&quot;,
+      &quot;predicate&quot;: &quot;second.example.com&quot;,
+      &quot;cookie&quot;: &quot;JSESSIONID&quot;,
+      &quot;containers&quot;: [{
+          &quot;id&quot;: &quot;das843j3h3k&quot;,
+          &quot;ip&quot;: &quot;192.168.1.10:80&quot;
+        },
+        {
+          &quot;id&quot;: &quot;fds32k4354f&quot;,
+          &quot;ip&quot;: &quot;192.168.1.11:80&quot;
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+
+<p><strong>Explanation:</strong></p>
+
+<ul>
+<li><strong>table</strong>: name of DynamoDB table where configurations will be stored.</li>
+<li><strong>running</strong>: instances of services running within the weave network.</li>
+<li><strong>candidates</strong>:  instances that are new to the weave network and do not yet exist in the HAProxy config.</li>
+<li><strong>configMode</strong>: type of routing. It can be either <code>Path</code> or <code>Host</code>. In <code>Path</code> mode, the URL path is used to determine which backend to forward the request to. In <code>Host</code> mode, the HTTP host header is used to determine which backend to forward the request to.
+<em>Defaults to <code>host</code> mode.</em></li>
+<li><strong>serviceName</strong>: name of service the containers belong to.</li>
+
+<li><p><strong>predicate</strong>: value used along with mode to determine which service a request will be forwarded to.
+In <code>Path</code> mode, the predicate looks like:</p>
+
+<pre><code>    acl &lt;cluster&gt; url_beg /&lt;predicate&gt;
+</code></pre>
+
+<p>In <code>Host</code> mode:</p>
+
+<pre><code>    acl &lt;cluster&gt; hdr(host) -i &lt;predicate&gt;
+</code></pre></li>
+
+<li><p><strong>cookie</strong>: name of cookie to be used for sticky sessions. If not defined, sticky sessions will not be configured.</p></li>
+
+<li><p><strong>containers</strong>: key-value pairs of container ids and their corresponding IP addresses.</p></li>
+</ul>
+
+<p><strong>HAProxy config generated from request:</strong></p>
+
+<pre><code>global
+   log 127.0.0.1   local0
+   log 127.0.0.1   local1 notice
+   maxconn 4096
+   user haproxy
+   group haproxy
+   daemon
+
+defaults
+    log global
+    mode http
+    option httplog
+    option dontlognull
+    option forwardfor
+    option http-server-close
+    timeout connect 5000
+    timeout client 50000
+    timeout server 50000
+
+# Define frontends
+
+frontend http
+    bind :80
+
+    acl app1 hdr(host) -i first.example.com
+    use_backend app1 if app1
+
+    acl app2 hdr(host) -i second.example.com
+    use_backend app2 if app2
+
+
+# Define backends
+
+backend app1
+    mode http
+    balance roundrobin
+    option forwardfor
+    cookie JSESSIONID prefix nocache
+
+    server a23nj53h3j4 192.168.1.9:80 check cookie JSESSIONID
+
+backend app2
+    mode http
+    balance roundrobin
+    option forwardfor
+    cookie JSESSIONID prefix nocache
+
+    server das843j3h3k 192.168.1.10:80 check cookie JSESSIONID
+
+    server fds32k4354f 192.168.1.11:80 check cookie JSESSIONID
+</code></pre>
+
+<h2 id="cosmonaut-https-github-com-shuaibiyy-cosmonaut:590f6df10d6bcf152493e39f0a6f759c"><a href="https://github.com/shuaibiyy/cosmonaut">Cosmonaut</a></h2>
+
+<p>Cosmonaut is a tool for monitoring docker hosts and reloading their HAProxy configurations. When a docker event relevant to Cosmonaut occurs, it gathers information about the event and current state of services running on the host, and sends that information in a request to Lambda-Registry, which then returns a HAProxy config. Cosmonaut finally reloads the host&rsquo;s HAProxy with the config it received. Currently, Cosmonaut expects HAProxy to be running in a <a href="https://github.com/rstiller/dockerfiles/tree/master/haproxy">container</a>, and it updates it via a docker exec command.</p>
+
+                </section>
+            </article>
+            <footer id="post-meta" class="clearfix">
+                <a href="https://twitter.com/shuaibiyy">
+                        <img class="avatar" src="https://shuaib.me/images/avatar.png">
+                        <div>
+                            <span class="dark">Shuaib</span>
+                            <span>Is in an endless pursuit of simplicity.</span>
+                        </div>
+                    </a>
+                <section id="sharing">
+                    <a class="twitter" href="https://twitter.com/intent/tweet?text=https%3a%2f%2fshuaib.me%2fhaproxy-config-mgmt-lambda-registry-cosmonaut%2f - HAProxy%20Configuration%20Management%20with%20Lambda-Registry%20and%20Cosmonaut by @shuaibiyy"><span class="icon-twitter"> @shuaibiyy</span></a>
+
+<a class="facebook" href="#" onclick="
+    window.open(
+      'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),
+      'facebook-share-dialog',
+      'width=626,height=436');
+    return false;"><span class="icon-facebook-rect"> Share</span>
+</a>
+
+                </section>
+            </footer>
+
+            <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'callmeninja';
+    var disqus_identifier = 'https:\/\/shuaib.me\/haproxy-config-mgmt-lambda-registry-cosmonaut\/';
+    var disqus_title = 'HAProxy Configuration Management with Lambda-Registry and Cosmonaut';
+    var disqus_url = 'https:\/\/shuaib.me\/haproxy-config-mgmt-lambda-registry-cosmonaut\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://shuaib.me/learning-to-rank-places/">Learning to Rank Places for Geospatial Search<aside class="dates">Oct 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ars-cluster-viz/">Visualizing Streets Clustered by Address Layout<aside class="dates">May 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/clustering-ars/">Clustering Address Reference Systems<aside class="dates">Apr 30</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/adversarial-perturbations/">Learning about Adversarial Perturbations<aside class="dates">Dec 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/thread-db-conn-go-server/">Threading a DB Connection through a Go API Server<aside class="dates">Jan 14</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/passing-key-val-prog-args-in-code/">Passing Key-value Program Arguments to Go Programs in Code<aside class="dates">May 25</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ecs-jenkins/">ECS-Powered Jenkins<aside class="dates">May 13</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/">HAProxy Configuration Management with Lambda-Registry and Cosmonaut<aside class="dates">May 8</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/immutable-infrastructure/">On Immutable Infrastructure<aside class="dates">May 6</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/">Overcoming an AWS ECS Deficiency Using Terraform<aside class="dates">Apr 27</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        
+<div id="social">
+    
+    <a class="symbol" href="https://www.github.com/shuaibiyy">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://www.twitter.com/shuaibiyy">
+        circletwitterbird
+    </a>
+    
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2020 Shuaib
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://shuaib.me/js/main.js"></script>
+<script src="https://shuaib.me/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-77015490-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+    </body>
+</html>

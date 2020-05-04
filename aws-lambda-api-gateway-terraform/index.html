@@ -1,0 +1,229 @@
+    <!DOCTYPE html>
+<html lang="en-us">
+	<head>
+		<script type="text/javascript">
+			var host = "shuaib.me";
+			if ((host == window.location.host) && (window.location.protocol != "https:"))
+				window.location.protocol = "https";
+		</script>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="Shuaib">
+		<meta name="description" content=".">
+		<meta name="generator" content="Hugo 0.15" />
+		<title>On AWS Lambda, API Gateway and Terraform &middot; This Is Fine</title>
+		<link rel="shortcut icon" href="https://shuaib.me/images/favicon.ico">
+		<link rel="stylesheet" href="https://shuaib.me/css/style.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/highlight.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/monosocialiconsfont.css">
+		<link rel="canonical"  href="https://shuaib.me/aws-lambda-api-gateway-terraform/" />
+		
+	</head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://shuaib.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		<a href='https://shuaib.me/about'>About</a>
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>On AWS Lambda, API Gateway and Terraform</h1>
+                    <h2 class="headline">April 18, 2016</h2>
+                </header>
+                <section id="post-body">
+                    <p><a href="https://aws.amazon.com/lambda/">AWS Lambda</a> is arguably the most exciting service released in AWS since EC2. Lambda is a service that lets you run code on someone else&rsquo;s machine, in this case EC2. All you need to do is pick the runtime your code can run in, and provide the code. Currently, the supported runtimes are:</p>
+
+<ul>
+<li>Node.js: v0.10.36, v4.3.2</li>
+<li>Java: Java 8</li>
+<li>Python: Python 2.7</li>
+</ul>
+
+<p>Developing applications using Lambda differs from the way we are typically used to, in terms of codebase management, tooling, frameworks, testing and deployment. On one hand, Lambda offers us the entire AWS ecosystem with simple configurations, and on the other, it requires us to rethink how we approach building even small applications. There aren&rsquo;t yet enough success stories and best practices out there to give one the confidence to build large applications using Lambda, but there&rsquo;s enough information to start farming out computation heavy processes to Lambda. Lambda especially shines because of its ability to scale along with its workload.</p>
+
+<p><a href="https://aws.amazon.com/api-gateway/">API Gateway</a> is another exciting service on AWS that aims to ease the task of creating APIs. You define your resources and their models, request transformations, locations where requests should be proxied to, response transformations; and you get a functioning API without deploying a single machine. An API Gateway endpoint can use a Lambda function as its backend, which is the sweet spot touted by serverless architecture advocates.</p>
+
+<p>I recently created a small project using Lambda and API Gateway. When deployed, the application provides an API endpoint that can be used to generate a <code>haproxy.cfg</code> file based on parameters provided. You can find the project source <a href="https://github.com/shuaibiyy/haproxy-config-generator">here</a>.</p>
+
+<p>One major pain point of using Lambda and API Gateway is the difficulty of setting things up, so the project uses <a href="https://terraform.io">Terraform</a> to ease that difficulty. Terraform is a tool that lets you define configurations, which it can run to provision resources on datacenters by providers such as AWS, Azure and Google Cloud. In this project, Terraform is used to provision the Lambda function and API Gateway resources. With Terraform installed, the project can be deployed by simply invoking:</p>
+
+<pre><code class="language-bash">terraform apply
+</code></pre>
+
+<p>and torn down using:</p>
+
+<pre><code class="language-bash">terraform destroy
+</code></pre>
+
+<p>Like every system in its early life, API Gateway and Lambda have minor bugs and areas of improvement. One particular bug I couldn&rsquo;t find a sensible workaround for is API Gateway failing to have the right permissions to talk with Lambda after deployment. The solution is to perform a ceremony described in <a href="https://www.youtube.com/watch?v=H4LM_jw5zzs">this youtube video</a>.</p>
+
+<p>Overall, the combination of these technologies is lethal, and I&rsquo;m interested in seeing how functionality in existing applications can be chipped away to harness the strengths of these so-called serverless architectures.</p>
+
+                </section>
+            </article>
+            <footer id="post-meta" class="clearfix">
+                <a href="https://twitter.com/shuaibiyy">
+                        <img class="avatar" src="https://shuaib.me/images/avatar.png">
+                        <div>
+                            <span class="dark">Shuaib</span>
+                            <span>Is in an endless pursuit of simplicity.</span>
+                        </div>
+                    </a>
+                <section id="sharing">
+                    <a class="twitter" href="https://twitter.com/intent/tweet?text=https%3a%2f%2fshuaib.me%2faws-lambda-api-gateway-terraform%2f - On%20AWS%20Lambda%2c%20API%20Gateway%20and%20Terraform by @shuaibiyy"><span class="icon-twitter"> @shuaibiyy</span></a>
+
+<a class="facebook" href="#" onclick="
+    window.open(
+      'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),
+      'facebook-share-dialog',
+      'width=626,height=436');
+    return false;"><span class="icon-facebook-rect"> Share</span>
+</a>
+
+                </section>
+            </footer>
+
+            <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'callmeninja';
+    var disqus_identifier = 'https:\/\/shuaib.me\/aws-lambda-api-gateway-terraform\/';
+    var disqus_title = 'On AWS Lambda, API Gateway and Terraform';
+    var disqus_url = 'https:\/\/shuaib.me\/aws-lambda-api-gateway-terraform\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://shuaib.me/learning-to-rank-places/">Learning to Rank Places for Geospatial Search<aside class="dates">Oct 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ars-cluster-viz/">Visualizing Streets Clustered by Address Layout<aside class="dates">May 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/clustering-ars/">Clustering Address Reference Systems<aside class="dates">Apr 30</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/adversarial-perturbations/">Learning about Adversarial Perturbations<aside class="dates">Dec 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/thread-db-conn-go-server/">Threading a DB Connection through a Go API Server<aside class="dates">Jan 14</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/passing-key-val-prog-args-in-code/">Passing Key-value Program Arguments to Go Programs in Code<aside class="dates">May 25</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ecs-jenkins/">ECS-Powered Jenkins<aside class="dates">May 13</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/">HAProxy Configuration Management with Lambda-Registry and Cosmonaut<aside class="dates">May 8</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/immutable-infrastructure/">On Immutable Infrastructure<aside class="dates">May 6</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/">Overcoming an AWS ECS Deficiency Using Terraform<aside class="dates">Apr 27</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        
+<div id="social">
+    
+    <a class="symbol" href="https://www.github.com/shuaibiyy">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://www.twitter.com/shuaibiyy">
+        circletwitterbird
+    </a>
+    
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2020 Shuaib
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://shuaib.me/js/main.js"></script>
+<script src="https://shuaib.me/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-77015490-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+    </body>
+</html>

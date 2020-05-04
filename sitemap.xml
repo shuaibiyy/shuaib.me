@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>https://shuaib.me/</loc>
+    <lastmod>2019-10-04T00:11:25+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/learning-to-rank-places/</loc>
+    <lastmod>2019-10-04T00:11:25+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/ars-cluster-viz/</loc>
+    <lastmod>2019-05-01T00:09:45+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/clustering-ars/</loc>
+    <lastmod>2019-04-30T00:00:23+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/adversarial-perturbations/</loc>
+    <lastmod>2018-12-01T00:12:23+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/thread-db-conn-go-server/</loc>
+    <lastmod>2017-01-14T02:42:18+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/passing-key-val-prog-args-in-code/</loc>
+    <lastmod>2016-05-25T21:16:07+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/ecs-jenkins/</loc>
+    <lastmod>2016-05-13T03:33:00+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/</loc>
+    <lastmod>2016-05-08T02:18:18+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/immutable-infrastructure/</loc>
+    <lastmod>2016-05-06T19:44:10+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/</loc>
+    <lastmod>2016-04-27T05:58:17+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/docker-toolbox-upgrade-guide/</loc>
+    <lastmod>2016-04-25T17:55:00+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/aws-lambda-api-gateway-terraform/</loc>
+    <lastmod>2016-04-18T12:50:49+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/stormpath-ssl-termination/</loc>
+    <lastmod>2016-04-13T14:57:45+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/on-weave/</loc>
+    <lastmod>2016-04-07T23:39:40+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/clojure-journey/</loc>
+    <lastmod>2016-04-06T15:35:23+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/stormpath-react/</loc>
+    <lastmod>2016-02-09T15:35:23+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/stormpath-java-backend/</loc>
+    <lastmod>2016-02-09T15:35:23+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/stormpath-user-management/</loc>
+    <lastmod>2016-02-06T01:31:31+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/testing-react-components/</loc>
+    <lastmod>2015-11-24T23:20:37+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://shuaib.me/about/</loc>
+  </url>
+  
+</urlset>

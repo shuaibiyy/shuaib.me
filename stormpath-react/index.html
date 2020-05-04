@@ -1,0 +1,524 @@
+    <!DOCTYPE html>
+<html lang="en-us">
+	<head>
+		<script type="text/javascript">
+			var host = "shuaib.me";
+			if ((host == window.location.host) && (window.location.protocol != "https:"))
+				window.location.protocol = "https";
+		</script>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="Shuaib">
+		<meta name="description" content=".">
+		<meta name="generator" content="Hugo 0.15" />
+		<title>Integrating a React Frontend with Stormpath &middot; This Is Fine</title>
+		<link rel="shortcut icon" href="https://shuaib.me/images/favicon.ico">
+		<link rel="stylesheet" href="https://shuaib.me/css/style.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/highlight.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/monosocialiconsfont.css">
+		<link rel="canonical"  href="https://shuaib.me/stormpath-react/" />
+		
+	</head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://shuaib.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		<a href='https://shuaib.me/about'>About</a>
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>Integrating a React Frontend with Stormpath</h1>
+                    <h2 class="headline">February 9, 2016</h2>
+                </header>
+                <section id="post-body">
+                    <p>In a <a href="http://shuaib.me/on-stormpath-and-a-java-backend/">previous post</a>, I went through how we hooked up Stormpath to our Java backend. In this post, I&rsquo;ll go through how we got it working with our React front-end.</p>
+
+<p>In a <a href="http://shuaib.me/on-stormpath/">previous post</a>, I explained our rationale for not using the Stormpath React SDK:</p>
+
+<blockquote>
+<p>For front-end applications, Stormpath provides the Stormpath React SDK, a fairly new project that tries to do a lot of the work required when adding authentication to your app. In our project, however, we opted not to use the SDK. The SDK’s code was fairly small and simple, so we decided it would be more productive in the long run to implement a narrower set of functionalities tailored to our use-case and consistent with our app’s design.</p>
+</blockquote>
+
+<p>With a REST API backend and a REST client as is our case, it is an established pattern to expect a server response with a payload in a format such as JSON, XML, etc. The Stormpath Servlet Plugin however, responds with paths to server-rendered views for some of its endpoints. This works well if you are rendering your views on the server-side. The URIs to the views returned are <a href="https://docs.stormpath.com/java/servlet-plugin/registration.html#verify-next-uri">configurable</a>, which didn&rsquo;t make much of a difference for us because we prefer containing the view routing logic within the client. Consequently and hopefully temporarily, we ended up with a fire-and-forget model because we couldn&rsquo;t rely on the response from the server, and we didn&rsquo;t want the client to redirect to a server-specified URI. But I digress, the issues we faced with the client-server integration are a topic for another post.</p>
+
+<p>I&rsquo;ll run you through the code required to implement some basic authentication features in a React app using Stormpath. The illustration code is written in ES6, and uses the Reflux flux library. Nonetheless, the code should be easily adaptable to ES5 and/or a different flux library.</p>
+
+<p>First, let&rsquo;s create a login form:</p>
+
+<pre><code>// login-form.js
+import React from 'react'
+import Reflux from 'reflux'
+import ReactMixin from 'react-mixin'
+import bindAll from 'lodash/bindAll'
+import LinkedStateMixin from 'react-addons-linked-state-mixin'
+import Actions from './actions' 
+import Store from './store'
+
+@ReactMixin.decorate(LinkedStateMixin)
+@ReactMixin.decorate(Reflux.connect(Store))
+class LoginForm extends React.Component {
+
+  constructor (props) {
+    super(props)
+    bindAll(this)
+    this.state = {
+      username: '',
+      password: ''
+    }
+  }
+
+  static get propTypes () {
+    // History is provided by react-router.
+    return {
+      history: React.PropTypes.object.isRequired
+    }
+  }
+
+  componentWillUpdate (nextProps, nextState) {
+    if (nextState.loggedIn) {
+      this.props.history.pushState(null, '/')
+    }
+  }
+
+  onSubmit (e) {
+    e.preventDefault()
+    const username = this.state.username
+    const password = this.state.password
+
+    Actions.login({username, password})
+  }
+
+  render () {
+    return (
+      &lt;div&gt;
+        &lt;form className='login' onSubmit={this.onSubmit.bind(this)}&gt;
+          &lt;div className='login-fields'&gt;
+            &lt;input
+              type='email'
+              ref='email'
+              className='field'
+              placeholder='Username or Email (required)'
+              valueLink={this.linkState('username')}
+              required='required'
+              /&gt;
+            &lt;input
+              type='password'
+              className='field'
+              placeholder='Password (required)'
+              valueLink={this.linkState('password')}
+              required='required'
+              /&gt;
+          &lt;/div&gt;
+          &lt;input type='submit' className='login-button' value='Log In'/&gt;
+        &lt;/form&gt;
+        &lt;LoginInfo/&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+
+export default LoginForm
+</code></pre>
+
+<p>The component above uses the <a href="https://github.com/brigand/react-mixin">react-mixin</a> library to make decorators work with React ES6 components. You&rsquo;ll need to use Babel 5.x or a <a href="https://github.com/loganfsmyth/babel-plugin-transform-decorators-legacy">plugin</a> if you are on Babel 6, because the unratified decorator syntax is no longer supported.</p>
+
+<p>Next we&rsquo;ll create a registration form:</p>
+
+<pre><code>// registration-form.js
+import React from 'react'
+import Reflux from 'reflux'
+import bindAll from 'lodash/bindAll'
+import ReactMixin from 'react-mixin'
+import LinkedStateMixin from 'react-addons-linked-state-mixin'
+import Actions from './actions'
+import Store from './store'
+
+@ReactMixin.decorate(LinkedStateMixin)
+@ReactMixin.decorate(Reflux.connect(Store))
+class RegistrationForm extends React.Component {
+
+  constructor (props, context) {
+    super(props, context)
+    bindAll(this)
+    this.state = {
+      givenName: '',
+      surname: '',
+      username: '',
+      password: '',
+      confirmPassword: '',
+      errorMessage: null
+    }
+  }
+
+  static get propTypes () {
+    return {
+      history: React.PropTypes.object.isRequired
+    }
+  }
+
+  componentWillUpdate (nextProps, nextState) {
+    if (nextState.newlyRegistered) {
+      this.props.history.pushState(null, '/')
+    }
+  }
+
+  onSubmit (e) {
+    e.preventDefault()
+    const givenName = this.state.givenName
+    const surname = this.state.surname
+    const email = this.state.email
+    const password = this.state.password
+    const confirmPassword = this.state.confirmPassword
+
+    Actions.register({
+      givenName,
+      surname,
+      email,
+      password,
+      confirmPassword
+    })
+  }
+
+  onGivenNameChanged (e) {
+    this.state.givenName = e.target.value
+  }
+
+  onSurnameChanged (e) {
+    this.state.surname = e.target.value
+  }
+
+  onEmailChanged (e) {
+    this.state.email = e.target.value
+  }
+
+  onPasswordChanged (e) {
+    this.state.password = e.target.value
+  }
+
+  onConfirmPasswordChanged (e) {
+    this.state.confirmPassword = e.target.value
+
+    if (this.state.password !== this.state.confirmPassword) {
+      this.setState({errorMessage: 'Passwords don't match.'})
+    } else {
+      this.setState({errorMessage: null})
+    }
+  }
+
+  render () {
+    return (
+      &lt;div&gt;
+        &lt;form className='login' onSubmit={this.onSubmit.bind(this)}&gt;
+          &lt;div className='login-fields'&gt;
+            &lt;input
+              type='text'
+              ref='givenName'
+              className='field'
+              placeholder='Given Name (required)'
+              onChange={this.onGivenNameChanged.bind(this)}
+              required='required'
+              /&gt;
+            &lt;input
+              type='text'
+              className='field'
+              placeholder='Surname (required)'
+              onChange={this.onSurnameChanged.bind(this)}
+              required='required'
+              /&gt;
+            &lt;input
+              type='email'
+              className='field'
+              placeholder='Email (required)'
+              onChange={this.onEmailChanged.bind(this)}
+              required='required'
+              /&gt;
+            &lt;input
+              type='password'
+              className='field'
+              placeholder='Password (required)'
+              onChange={this.onPasswordChanged.bind(this)}
+              required='required'
+              /&gt;
+            &lt;input
+              type='password'
+              className='field'
+              placeholder='Confirm Password (required)'
+              onChange={this.onConfirmPasswordChanged.bind(this)}
+              required='required'
+              /&gt;
+          &lt;/div&gt;
+          {
+            this.state.errorMessage !== null
+              ? &lt;p style={{color: 'red'}}&gt;{this.state.errorMessage}&lt;/p&gt;
+              : null
+          }
+          &lt;input type='submit' className='login-button' value='Create Account'/&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+
+export default RegistrationForm
+</code></pre>
+
+<p>Next, we create the actions that get fired when forms are submitted:</p>
+
+<pre><code>// actions.js
+import Reflux from 'reflux'
+import { login, register } from './endpoints'
+
+const Actions = Reflux.createActions({
+  login: {children: ['completed', 'failed']},
+  register: {children: ['completed']},
+})
+Actions.login.listen(function (credentials) {
+  return login(credentials).then(this.completed).catch(this.failed)
+})
+Actions.register.listen(function (credentials) {
+  this.progressed()
+  // Register returns a view, not a JSON response.
+  return register(credentials).then(this.completed).catch(this.completed)
+})
+
+export default Actions
+</code></pre>
+
+<p>We use the <a href="https://developer.mozilla.org/en/docs/Web/API/Fetch_API">Fetch API</a> to make calls to our API using <a href="https://github.com/matthew-andrews/isomorphic-fetch">isomorphic fetch</a>, but you can easily replace it with XHR or any of its wrapper libraries:</p>
+
+<pre><code>// endpoints.js
+import fetch from 'isomorphic-fetch'
+
+const API_URL = 'http://localhost:8080/api'
+
+export function login (credentials) {
+  return fetch(`${API_URL}/oauth/token`, {
+    method: 'post',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: `grant_type=password&amp;username=${credentials.username}&amp;password=${credentials.password}`
+  })
+}
+
+export function register (credentials) {
+  return fetch(`${API_URL}/register`, {
+    method: 'post',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: `givenName=${credentials.givenName}&amp;surname=${credentials.surname}&amp;email=${credentials.email}&amp;password=${credentials.password}&amp;confirmPassword=${credentials.confirmPassword}`
+  })
+}
+</code></pre>
+
+<p>You&rsquo;ll notice that I construct the request body, as in: <code>grant_type=password&amp;username=${credentials.username}&amp;password=${credentials.password}</code>. I do so because for reasons I&rsquo;ve yet to explore, the Stormpath endpoints don&rsquo;t like bodies formed using FormData, as in:</p>
+
+<pre><code>let formData = new FormData()
+formData.append(&quot;username&quot;, credentials.username)
+formData.append(&quot;password&quot;, credentials.password)
+formData.append(&quot;grant_type&quot;, &quot;password&quot;)
+</code></pre>
+
+<p>The final step is just a matter of listening for actions in your store, and triggering state changes in your components.</p>
+
+<pre><code>//store.js
+import Reflux from 'reflux'
+import Actions from '../actions'
+
+const Store = Reflux.createStore({
+  listenables: [Actions],
+
+  onLoginCompleted: function (response) {
+    if (response.ok) {
+      this.trigger({loggedIn: true})
+    }
+  },
+
+  onRegisterCompleted: function () {
+    this.trigger({newlyRegistered: true})
+  }
+})
+
+export default Store
+</code></pre>
+
+<p>That&rsquo;s it.</p>
+
+<p>Unrelated to React and Stormpath, I ran into a number of issues while using the Fetch API, and here are my tips for saving yourself some valuable time:</p>
+
+<ol>
+<li>The <a href="https://fetch.spec.whatwg.org/">Fetch Standard</a> is your friend.</li>
+<li><code>Credentials: “include”</code> is important.</li>
+<li>Understand the difference between <code>cors</code> and <code>no-cors</code>.</li>
+</ol>
+
+                </section>
+            </article>
+            <footer id="post-meta" class="clearfix">
+                <a href="https://twitter.com/shuaibiyy">
+                        <img class="avatar" src="https://shuaib.me/images/avatar.png">
+                        <div>
+                            <span class="dark">Shuaib</span>
+                            <span>Is in an endless pursuit of simplicity.</span>
+                        </div>
+                    </a>
+                <section id="sharing">
+                    <a class="twitter" href="https://twitter.com/intent/tweet?text=https%3a%2f%2fshuaib.me%2fstormpath-react%2f - Integrating%20a%20React%20Frontend%20with%20Stormpath by @shuaibiyy"><span class="icon-twitter"> @shuaibiyy</span></a>
+
+<a class="facebook" href="#" onclick="
+    window.open(
+      'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),
+      'facebook-share-dialog',
+      'width=626,height=436');
+    return false;"><span class="icon-facebook-rect"> Share</span>
+</a>
+
+                </section>
+            </footer>
+
+            <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'callmeninja';
+    var disqus_identifier = 'https:\/\/shuaib.me\/stormpath-react\/';
+    var disqus_title = 'Integrating a React Frontend with Stormpath';
+    var disqus_url = 'https:\/\/shuaib.me\/stormpath-react\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://shuaib.me/learning-to-rank-places/">Learning to Rank Places for Geospatial Search<aside class="dates">Oct 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ars-cluster-viz/">Visualizing Streets Clustered by Address Layout<aside class="dates">May 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/clustering-ars/">Clustering Address Reference Systems<aside class="dates">Apr 30</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/adversarial-perturbations/">Learning about Adversarial Perturbations<aside class="dates">Dec 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/thread-db-conn-go-server/">Threading a DB Connection through a Go API Server<aside class="dates">Jan 14</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/passing-key-val-prog-args-in-code/">Passing Key-value Program Arguments to Go Programs in Code<aside class="dates">May 25</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ecs-jenkins/">ECS-Powered Jenkins<aside class="dates">May 13</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/">HAProxy Configuration Management with Lambda-Registry and Cosmonaut<aside class="dates">May 8</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/immutable-infrastructure/">On Immutable Infrastructure<aside class="dates">May 6</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/">Overcoming an AWS ECS Deficiency Using Terraform<aside class="dates">Apr 27</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        
+<div id="social">
+    
+    <a class="symbol" href="https://www.github.com/shuaibiyy">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://www.twitter.com/shuaibiyy">
+        circletwitterbird
+    </a>
+    
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2020 Shuaib
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://shuaib.me/js/main.js"></script>
+<script src="https://shuaib.me/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-77015490-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+    </body>
+</html>

@@ -1,0 +1,358 @@
+    <!DOCTYPE html>
+<html lang="en-us">
+	<head>
+		<script type="text/javascript">
+			var host = "shuaib.me";
+			if ((host == window.location.host) && (window.location.protocol != "https:"))
+				window.location.protocol = "https";
+		</script>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="Shuaib">
+		<meta name="description" content=".">
+		<meta name="generator" content="Hugo 0.15" />
+		<title>Threading a DB Connection through a Go API Server &middot; This Is Fine</title>
+		<link rel="shortcut icon" href="https://shuaib.me/images/favicon.ico">
+		<link rel="stylesheet" href="https://shuaib.me/css/style.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/highlight.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/monosocialiconsfont.css">
+		<link rel="canonical"  href="https://shuaib.me/thread-db-conn-go-server/" />
+		
+	</head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://shuaib.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		<a href='https://shuaib.me/about'>About</a>
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>Threading a DB Connection through a Go API Server</h1>
+                    <h2 class="headline">January 14, 2017</h2>
+                </header>
+                <section id="post-body">
+                    <p>In this post, I&rsquo;ll walk through code snippets for a Golang service, showing how a database connection can be passed around from its initialisation all the way to HTTP handlers. There&rsquo;s also a snippet that shows how a custom handler type can be used as a <a href="https://github.com/urfave/negroni">Negroni</a> middleware. The service exposes 3 endpoints. It uses the <a href="https://github.com/jackc/pgx">pgx</a> library for persistence, <a href="http://www.gorillatoolkit.org/pkg/mux">gorilla/mux</a> for routing, Negroni for HTTP middleware, and <a href="https://auth0.com/">Auth0</a> for authentication.</p>
+
+<p>This first snippet shows some very standard code for database initialisation.</p>
+
+<pre><code>import (
+	&quot;fmt&quot;
+	_ &quot;github.com/jackc/pgx/stdlib&quot;
+	&quot;github.com/jmoiron/sqlx&quot;
+	&quot;log&quot;
+	&quot;os&quot;
+)
+
+func Init() *sqlx.DB {
+	db, err := sqlx.Open(&quot;pgx&quot;,
+		fmt.Sprintf(&quot;postgres://%s@%s:5432/postgres?sslmode=disable&quot;,
+			os.Getenv(&quot;DB_USER&quot;),
+			os.Getenv(&quot;DB_SERVER&quot;)))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+	return db
+}
+</code></pre>
+
+<p>The next snippet shows how the service&rsquo;s routes are defined.</p>
+
+<pre><code>type Route struct {
+	Name    string
+	Method  string
+	Pattern string
+	Handler HandlerWithDB // [1]
+}
+
+type Routes []Route
+var routes = Routes{
+	Route{
+		&quot;IndexTags&quot;,
+		&quot;GET&quot;,
+		&quot;/tags&quot;,
+		handlers.IndexTags,
+	},
+	Route{
+		&quot;ShowTag&quot;,
+		&quot;GET&quot;,
+		&quot;/tags/{slug}&quot;,
+		handlers.ShowTag,
+	},
+	Route{
+		&quot;SecuredCreateTag&quot;, // [2]
+		&quot;POST&quot;,
+		&quot;/tags&quot;,
+		handlers.CreateTag,
+	},
+}
+</code></pre>
+
+<p>[1] This is the type of the API&rsquo;s handlers, and is defined as follows:</p>
+
+<pre><code>type HandlerWithDB func(*sqlx.DB) http.HandlerFunc
+</code></pre>
+
+<p>Which means our API handlers end up looking like this:</p>
+
+<pre><code>var ShowTag = func(dbConn *sqlx.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		slug := mux.Vars(r)[&quot;slug&quot;]
+		tag, err := db.SelectTag(dbConn, slug)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		json.NewEncoder(w).Encode(tag)
+	}
+}
+</code></pre>
+
+<p>[2] The <strong>SecuredCreateTag</strong> endpoint will require user authentication. The presence of the <strong>Secure</strong> prefix in the handler&rsquo;s name will let the router creation function know that the handler should be wrapped by a higher-order function that enforces authentication.</p>
+
+<p>The next snippet shows how the routers defined above are used to create a <a href="www.gorillatoolkit.org/pkg/mux">mux</a> router:</p>
+
+<pre><code>import (
+	&quot;github.com/gorilla/mux&quot;
+	&quot;github.com/jmoiron/sqlx&quot;
+	&quot;github.com/urfave/negroni&quot;
+	&quot;strings&quot;
+	&quot;net/http&quot;
+)
+
+func NewRouter(db *sqlx.DB) *mux.Router {
+	r := mux.NewRouter().StrictSlash(true)
+	for _, route := range routes {
+		n := strings.ToLower(route.Name)
+		if strings.HasPrefix(n, &quot;secure&quot;) { // [3]
+			r.Handle(route.Pattern, auth.SecuredRoute(db, route.Handler)).Methods(route.Method).Name(route.Name)
+		} else {
+			r.Handle(route.Pattern, route.Handler(db)).Methods(route.Method).Name(route.Name)
+		}
+	}
+	return r
+}
+
+
+// [4]
+var SecuredRoute = func(db *sqlx.DB, handler HandlerWithDB) http.Handler {
+	return negroni.New(negroni.HandlerFunc(jwtMiddleware.HandlerWithNext), NegroniWrapper(db, handler)) // [5]
+}
+</code></pre>
+
+<p>[3] Of note is the check for the word <strong>secure</strong> in the handler&rsquo;s name. The use of a string to determine if an endpoint should be secured is at best an arguable thing to do. However, for my  inconsequential service, I can still sleep peacefully at night knowing fully well what I&rsquo;ve done.</p>
+
+<p>[4] The <strong>SecuredRoute</strong> function uses <a href="https://github.com/urfave/negroni">Negroni</a> to wrap <strong>jwtmiddleware</strong> from <a href="https://github.com/auth0/go-jwt-middleware">Go JWT middleware</a> by Auth0. Auth0 is an awesome service for offloading all of your authentication concerns &lt;3</p>
+
+<p>[5] The <strong>New</strong> function from Negroni creates a middleware stack that can consist only of Negroni handlers, and we are passing it a <strong>HandlerWithDB</strong> function, which is our type that does not implement the Negroni <strong>Handler</strong> interface. Negroni provides a <strong>Wrap</strong> function, but it is only able to wrap <strong>http.Handler</strong> functions. In order to use Negroni, we have to write a wrapper for <strong>HandlerWithDB</strong>:</p>
+
+<pre><code>import (
+	&quot;github.com/jmoiron/sqlx&quot;
+	&quot;github.com/urfave/negroni&quot;
+	&quot;net/http&quot;
+)
+
+type HandlerWithDB func(*sqlx.DB) http.HandlerFunc
+
+// [6]
+func (f HandlerWithDB) ServeHTTP(db *sqlx.DB, w http.ResponseWriter, r *http.Request) {
+	g := f(db)
+	g(w, r)
+}
+
+func NegroniWrapper(db *sqlx.DB, handler HandlerWithDB) negroni.Handler {
+	return negroni.HandlerFunc(func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+		handler.ServeHTTP(db, rw, r)
+		next(rw, r)
+	})
+}
+</code></pre>
+
+<p>[6] We also have to define a <strong>ServeHTTP</strong> function that takes a database connection as an additional argument.</p>
+
+<p>Finally, our main function to tie it all together:</p>
+
+<pre><code>import (
+	&quot;net/http&quot;
+	&quot;os&quot;
+)
+
+func main() {
+	dbConn := db.Init()
+	router := NewRouter(dbConn)
+	log.Fatal(http.ListenAndServe(&quot;:8080&quot;, router))
+}
+</code></pre>
+
+<p>This is my first Go service. I hope you&rsquo;ll be generous enough to give feedback if you have any.</p>
+
+                </section>
+            </article>
+            <footer id="post-meta" class="clearfix">
+                <a href="https://twitter.com/shuaibiyy">
+                        <img class="avatar" src="https://shuaib.me/images/avatar.png">
+                        <div>
+                            <span class="dark">Shuaib</span>
+                            <span>Is in an endless pursuit of simplicity.</span>
+                        </div>
+                    </a>
+                <section id="sharing">
+                    <a class="twitter" href="https://twitter.com/intent/tweet?text=https%3a%2f%2fshuaib.me%2fthread-db-conn-go-server%2f - Threading%20a%20DB%20Connection%20through%20a%20Go%20API%20Server by @shuaibiyy"><span class="icon-twitter"> @shuaibiyy</span></a>
+
+<a class="facebook" href="#" onclick="
+    window.open(
+      'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),
+      'facebook-share-dialog',
+      'width=626,height=436');
+    return false;"><span class="icon-facebook-rect"> Share</span>
+</a>
+
+                </section>
+            </footer>
+
+            <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'callmeninja';
+    var disqus_identifier = 'https:\/\/shuaib.me\/thread-db-conn-go-server\/';
+    var disqus_title = 'Threading a DB Connection through a Go API Server';
+    var disqus_url = 'https:\/\/shuaib.me\/thread-db-conn-go-server\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://shuaib.me/learning-to-rank-places/">Learning to Rank Places for Geospatial Search<aside class="dates">Oct 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ars-cluster-viz/">Visualizing Streets Clustered by Address Layout<aside class="dates">May 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/clustering-ars/">Clustering Address Reference Systems<aside class="dates">Apr 30</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/adversarial-perturbations/">Learning about Adversarial Perturbations<aside class="dates">Dec 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/thread-db-conn-go-server/">Threading a DB Connection through a Go API Server<aside class="dates">Jan 14</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/passing-key-val-prog-args-in-code/">Passing Key-value Program Arguments to Go Programs in Code<aside class="dates">May 25</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ecs-jenkins/">ECS-Powered Jenkins<aside class="dates">May 13</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/">HAProxy Configuration Management with Lambda-Registry and Cosmonaut<aside class="dates">May 8</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/immutable-infrastructure/">On Immutable Infrastructure<aside class="dates">May 6</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/">Overcoming an AWS ECS Deficiency Using Terraform<aside class="dates">Apr 27</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        
+<div id="social">
+    
+    <a class="symbol" href="https://www.github.com/shuaibiyy">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://www.twitter.com/shuaibiyy">
+        circletwitterbird
+    </a>
+    
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2020 Shuaib
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://shuaib.me/js/main.js"></script>
+<script src="https://shuaib.me/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-77015490-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+    </body>
+</html>

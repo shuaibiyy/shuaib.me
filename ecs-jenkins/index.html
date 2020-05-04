@@ -1,0 +1,213 @@
+    <!DOCTYPE html>
+<html lang="en-us">
+	<head>
+		<script type="text/javascript">
+			var host = "shuaib.me";
+			if ((host == window.location.host) && (window.location.protocol != "https:"))
+				window.location.protocol = "https";
+		</script>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="Shuaib">
+		<meta name="description" content=".">
+		<meta name="generator" content="Hugo 0.15" />
+		<title>ECS-Powered Jenkins &middot; This Is Fine</title>
+		<link rel="shortcut icon" href="https://shuaib.me/images/favicon.ico">
+		<link rel="stylesheet" href="https://shuaib.me/css/style.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/highlight.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/monosocialiconsfont.css">
+		<link rel="canonical"  href="https://shuaib.me/ecs-jenkins/" />
+		
+	</head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://shuaib.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		<a href='https://shuaib.me/about'>About</a>
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>ECS-Powered Jenkins</h1>
+                    <h2 class="headline">May 13, 2016</h2>
+                </header>
+                <section id="post-body">
+                    <p>I was recently in search of a scalable and cost-effective Jenkins setup using docker containers. I found what I believe satisfies that requirement by running Jenkins on <a href="https://aws.amazon.com/ecs/">Amazon EC2 Container Service (ECS)</a>. The simplest form of the setup involves running a single Jenkins master in an ECS cluster. To run builds in slaves, I use the <a href="https://wiki.jenkinsci.org/display/JENKINS/Amazon+EC2+Container+Service+Plugin">Amazon ECS Jenkins plugin</a>.</p>
+
+<p>The way it works is, you add an ECS cluster as what is called a &ldquo;Cloud&rdquo; in the &ldquo;Manage Jenkins&rdquo; section of Jenkins configuration, and an &ldquo;ECS slave template&rdquo; that describes a docker image and its resource constraints. When you define your job configuration, you have to specify a restriction for where the job can run that matches a label you provided while declaring a slave template. The setup steps are well documented in the ECS plugin page.</p>
+
+<p>I created a Terraform module that automates provisioning Jenkins on ECS using Terraform, it also provides a Terraform script for building and releasing your custom Jenkins image to <a href="https://aws.amazon.com/ecr/">Amazon EC2 Container Registry (ECR)</a>. You can find the Github repo <a href="https://github.com/shuaibiyy/ecs-jenkins">here</a>.</p>
+
+<p>With everything set up - when builds are run, the ECS plugin starts an ECS task running a docker container from a configured slave template docker image and runs the build on it. ECS tasks are ephemeral, so once the build completes or fails, the task gets cleaned up. Here&rsquo;s an illustration of how everything ties up together:</p>
+
+<p><img src="https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ecs-jenkins.png" alt="ECS Jenkins" /></p>
+
+<p>In conclusion, I find that this is a superior approach over spot instances because builds are unlikely to be terminated abruptly and better than long running Jenkins slaves because of their upfront resource commitment. I am yet to see how this works with autoscaling though, as I imagine that if the provisioned EC2 instances don&rsquo;t have the capacity to serve the requested builds, new instances should be spawned up based on the autoscaling policy.</p>
+
+                </section>
+            </article>
+            <footer id="post-meta" class="clearfix">
+                <a href="https://twitter.com/shuaibiyy">
+                        <img class="avatar" src="https://shuaib.me/images/avatar.png">
+                        <div>
+                            <span class="dark">Shuaib</span>
+                            <span>Is in an endless pursuit of simplicity.</span>
+                        </div>
+                    </a>
+                <section id="sharing">
+                    <a class="twitter" href="https://twitter.com/intent/tweet?text=https%3a%2f%2fshuaib.me%2fecs-jenkins%2f - ECS-Powered%20Jenkins by @shuaibiyy"><span class="icon-twitter"> @shuaibiyy</span></a>
+
+<a class="facebook" href="#" onclick="
+    window.open(
+      'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),
+      'facebook-share-dialog',
+      'width=626,height=436');
+    return false;"><span class="icon-facebook-rect"> Share</span>
+</a>
+
+                </section>
+            </footer>
+
+            <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'callmeninja';
+    var disqus_identifier = 'https:\/\/shuaib.me\/ecs-jenkins\/';
+    var disqus_title = 'ECS-Powered Jenkins';
+    var disqus_url = 'https:\/\/shuaib.me\/ecs-jenkins\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://shuaib.me/learning-to-rank-places/">Learning to Rank Places for Geospatial Search<aside class="dates">Oct 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ars-cluster-viz/">Visualizing Streets Clustered by Address Layout<aside class="dates">May 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/clustering-ars/">Clustering Address Reference Systems<aside class="dates">Apr 30</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/adversarial-perturbations/">Learning about Adversarial Perturbations<aside class="dates">Dec 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/thread-db-conn-go-server/">Threading a DB Connection through a Go API Server<aside class="dates">Jan 14</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/passing-key-val-prog-args-in-code/">Passing Key-value Program Arguments to Go Programs in Code<aside class="dates">May 25</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ecs-jenkins/">ECS-Powered Jenkins<aside class="dates">May 13</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/">HAProxy Configuration Management with Lambda-Registry and Cosmonaut<aside class="dates">May 8</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/immutable-infrastructure/">On Immutable Infrastructure<aside class="dates">May 6</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/">Overcoming an AWS ECS Deficiency Using Terraform<aside class="dates">Apr 27</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        
+<div id="social">
+    
+    <a class="symbol" href="https://www.github.com/shuaibiyy">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://www.twitter.com/shuaibiyy">
+        circletwitterbird
+    </a>
+    
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2020 Shuaib
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://shuaib.me/js/main.js"></script>
+<script src="https://shuaib.me/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-77015490-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+    </body>
+</html>

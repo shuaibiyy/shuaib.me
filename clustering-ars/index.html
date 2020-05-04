@@ -1,0 +1,301 @@
+    <!DOCTYPE html>
+<html lang="en-us">
+	<head>
+		<script type="text/javascript">
+			var host = "shuaib.me";
+			if ((host == window.location.host) && (window.location.protocol != "https:"))
+				window.location.protocol = "https";
+		</script>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="Shuaib">
+		<meta name="description" content=".">
+		<meta name="generator" content="Hugo 0.15" />
+		<title>Clustering Address Reference Systems &middot; This Is Fine</title>
+		<link rel="shortcut icon" href="https://shuaib.me/images/favicon.ico">
+		<link rel="stylesheet" href="https://shuaib.me/css/style.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/highlight.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/monosocialiconsfont.css">
+		<link rel="canonical"  href="https://shuaib.me/clustering-ars/" />
+		
+	</head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://shuaib.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		<a href='https://shuaib.me/about'>About</a>
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>Clustering Address Reference Systems</h1>
+                    <h2 class="headline">April 30, 2019</h2>
+                </header>
+                <section id="post-body">
+                    <p><em>You can have a look at this <a href="https://github.com/shuaibiyy/address-interpolation/blob/master/Preparation.ipynb">Jupyter notebook</a> for the data preparation, and <a href="https://github.com/shuaibiyy/address-interpolation/blob/master/ARS.ipynb">this one</a> for the setup and implementation of the Address Reference System clustering.</em></p>
+
+<p>Say you&rsquo;re building search functionality similar to Google Maps search and you want your users to be able to search for addresses. A key part of delivering this would be collecting address data. Luckily, there are data sources like <a href="https://openaddresses.io/">Openaddresses</a> and <a href="https://www.openstreetmap.org/">Openstreetmap</a> that provide free access to such data. However, these data sources suffer from a problem of missing house addresses. Address data can be incomplete due to data recording errors, destruction or construction of buildings, or a myriad of other reasons. One way to handle missing addresses is to predict the coordinates of an address based on data about other addresses on the same street. Say you have the coordinates for <em>Main Street 1, 2, 3, &amp; 5</em>; you could approximate the coordinates for <em>Main Street 4</em>. This is feasible because houses on a street tend to be laid out in some sequence, and the structure of that sequence is part of what is known as an <strong>Address Reference System (ARS)</strong>. In an ideal world, a city or municipality would have a standard ARS that&rsquo;s used for every street. In reality, that&rsquo;s often not the case.</p>
+
+<p><img src="https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ars/Arendsweg.png" alt="Arendsweg 13055, Berlin" /></p>
+
+<p>Addresses on a street follow some sequence and layout. For example, even numbered houses on one side of the road, and odd numbered houses on the other side, starting from the least number in the range to the highest. We can denote addresses on the right and left side of streets as <em>R</em> and <em>L</em> respectively, then a street can be described by a sequence such as <em>RRRLLL</em>, or <em>RLRLRLRL</em> etc. The street in the image above has its addresses in this sequence: <em>LLLLLLLLRLRLLLLLRRLRLRLLRRLLLLLLLLR</em>; odd numbered houses are on the left side of the street and the even numbered on the right side.</p>
+
+<p>To improve the accuracy of address interpolation, we&rsquo;d need to know the side of the street a house lies on; in other words, we need to know the ARS or layout of streets in a area. The approach I took was to apply the K-Means clustering algorithm to street parity sequences. The term parity refers the side of the road where an address is located i.e. left (<em>L</em>) or right (<em>R</em>). To extract address parities from streets, I used the <a href="https://github.com/pelias/interpolation">Pelias interpolation</a> tool. You can have a look at the <a href="https://github.com/shuaibiyy/address-interpolation/blob/master/Preparation.ipynb">data preparation notebook</a> for more details.</p>
+
+<p>In order to apply the K-Means algorithm on street sequences, a little feature engineering is required. In this case that involves using scikit-learn&rsquo;s <a href="https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">CountVectorizer</a> on ngrams of length 5 for each street sequence parity. Keep in mind that the training data for this exercise is restricted to Berlin.</p>
+
+<p><img src="https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ars/CountVectorizer.png" alt="CountVectorizer" /></p>
+
+<p>Afterwards, we pass the vectors and value of <em>K</em> into the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.cluster.MiniBatchKMeans.html">K-Means algorithm</a>, and get back cluster assignments for each street.</p>
+
+<p><img src="https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ars/KMeans.png" alt="K-Means" /></p>
+
+<p>Next, we can inspect the cluster assignments to see how well our algorithm did. Since we ran the K-Means with <em>K=2</em>, we expect that the algorithm learned 2 distinct types of street layouts. Let&rsquo;s inspect a couple of streets in <strong>cluster 1</strong>:</p>
+
+
+<figure >
+    
+        <img src="https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ars/Winsstra%c3%9fe.png" alt="Winsstraße, Prenzlauer Berg, Berlin, Germany" />
+    
+    
+    <figcaption>
+        <p>
+        Winsstraße, Prenzlauer Berg, Berlin, Germany
+        
+            
+        
+        </p> 
+    </figcaption>
+    
+</figure>
+
+
+
+<figure >
+    
+        <img src="https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ars/Papelallee.png" alt="Pappelallee, Prenzlauer Berg, Berlin, Germany" />
+    
+    
+    <figcaption>
+        <p>
+        Pappelallee, Prenzlauer Berg, Berlin, Germany
+        
+            
+        
+        </p> 
+    </figcaption>
+    
+</figure>
+
+
+<p>And a couple of streets in <strong>cluster 2</strong>:</p>
+
+<p>
+<figure >
+    
+        <img src="https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ars/John-Schehr-Stra%c3%9fe.png" alt="John-Schehr-Straße, Prenzlauer Berg, Berlin, Germany" />
+    
+    
+    <figcaption>
+        <p>
+        John-Schehr-Straße, Prenzlauer Berg, Berlin, Germany
+        
+            
+        
+        </p> 
+    </figcaption>
+    
+</figure>
+</p>
+
+<p>
+<figure >
+    
+        <img src="https://rawgit.com/shuaibiyy/shuaib.me/master/themes/hugo-cactus-theme/images/ars/Hufelandstra%c3%9fe.png" alt="Hufelandstraße, Prenzlauer Berg, Berlin, Germany" />
+    
+    
+    <figcaption>
+        <p>
+        Hufelandstraße, Prenzlauer Berg, Berlin, Germany
+        
+            
+        
+        </p> 
+    </figcaption>
+    
+</figure>
+</p>
+
+<p><strong>What can we understand from the cluster assignments?</strong></p>
+
+<p>Cluster 1 shows us streets with addresses in a <strong>horseshoe</strong> layout. The addresses run in sequence on one side of the street and wrap around to the other side.</p>
+
+<p>Cluster 2 shows us streets with addresses in an <strong>even-odd</strong> layout. Even-numbered addresses are on one side of the street, while odd-numbered ones are on the other side.</p>
+
+                </section>
+            </article>
+            <footer id="post-meta" class="clearfix">
+                <a href="https://twitter.com/shuaibiyy">
+                        <img class="avatar" src="https://shuaib.me/images/avatar.png">
+                        <div>
+                            <span class="dark">Shuaib</span>
+                            <span>Is in an endless pursuit of simplicity.</span>
+                        </div>
+                    </a>
+                <section id="sharing">
+                    <a class="twitter" href="https://twitter.com/intent/tweet?text=https%3a%2f%2fshuaib.me%2fclustering-ars%2f - Clustering%20Address%20Reference%20Systems by @shuaibiyy"><span class="icon-twitter"> @shuaibiyy</span></a>
+
+<a class="facebook" href="#" onclick="
+    window.open(
+      'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),
+      'facebook-share-dialog',
+      'width=626,height=436');
+    return false;"><span class="icon-facebook-rect"> Share</span>
+</a>
+
+                </section>
+            </footer>
+
+            <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'callmeninja';
+    var disqus_identifier = 'https:\/\/shuaib.me\/clustering-ars\/';
+    var disqus_title = 'Clustering Address Reference Systems';
+    var disqus_url = 'https:\/\/shuaib.me\/clustering-ars\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://shuaib.me/learning-to-rank-places/">Learning to Rank Places for Geospatial Search<aside class="dates">Oct 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ars-cluster-viz/">Visualizing Streets Clustered by Address Layout<aside class="dates">May 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/clustering-ars/">Clustering Address Reference Systems<aside class="dates">Apr 30</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/adversarial-perturbations/">Learning about Adversarial Perturbations<aside class="dates">Dec 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/thread-db-conn-go-server/">Threading a DB Connection through a Go API Server<aside class="dates">Jan 14</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/passing-key-val-prog-args-in-code/">Passing Key-value Program Arguments to Go Programs in Code<aside class="dates">May 25</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ecs-jenkins/">ECS-Powered Jenkins<aside class="dates">May 13</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/">HAProxy Configuration Management with Lambda-Registry and Cosmonaut<aside class="dates">May 8</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/immutable-infrastructure/">On Immutable Infrastructure<aside class="dates">May 6</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/">Overcoming an AWS ECS Deficiency Using Terraform<aside class="dates">Apr 27</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        
+<div id="social">
+    
+    <a class="symbol" href="https://www.github.com/shuaibiyy">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://www.twitter.com/shuaibiyy">
+        circletwitterbird
+    </a>
+    
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2020 Shuaib
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://shuaib.me/js/main.js"></script>
+<script src="https://shuaib.me/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-77015490-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+    </body>
+</html>

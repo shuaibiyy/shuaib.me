@@ -1,0 +1,268 @@
+    <!DOCTYPE html>
+<html lang="en-us">
+	<head>
+		<script type="text/javascript">
+			var host = "shuaib.me";
+			if ((host == window.location.host) && (window.location.protocol != "https:"))
+				window.location.protocol = "https";
+		</script>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="Shuaib">
+		<meta name="description" content=".">
+		<meta name="generator" content="Hugo 0.15" />
+		<title>Using Stormpath on a Java Backend &middot; This Is Fine</title>
+		<link rel="shortcut icon" href="https://shuaib.me/images/favicon.ico">
+		<link rel="stylesheet" href="https://shuaib.me/css/style.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/highlight.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/monosocialiconsfont.css">
+		<link rel="canonical"  href="https://shuaib.me/stormpath-java-backend/" />
+		
+	</head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://shuaib.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		<a href='https://shuaib.me/about'>About</a>
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>Using Stormpath on a Java Backend</h1>
+                    <h2 class="headline">February 9, 2016</h2>
+                </header>
+                <section id="post-body">
+                    <p>In a <a href="http://shuaib.me/stormpath/">previous post</a>, I talked about our motivation for picking Stormpath as the user management solution for <a href="https://distinction.ng">Distinction.ng</a>. To recap, our app is built using Java on the backend and React on the front-end. In this post, I&rsquo;ll go through how we got Stormpath working on our Java backend.</p>
+
+<p>We are making use of the Stormpath Java Servlet Plugin, which has an excellent <a href="https://docs.stormpath.com/java/servlet-plugin/">getting started guide</a>. The plugin is mostly configuration driven and comes with reasonable defaults. Most of your application-specific configuration should reside in a file called <code>stormpath.properties</code>.</p>
+
+<p>Our backend API is RESTful, so we started by figuring out the endpoints we wanted to authenticate, and then simply added lines like these to our <code>stormpath.properties</code> file:</p>
+
+<pre><code>stormpath.web.uris./api/exams/** = authc
+stormpath.web.uris./api/subjects/** = authc
+stormpath.web.uris./api/questions/** = authc
+</code></pre>
+
+<p>By default, the Stormpath servlet plugin comes with a bunch of preconfigured endpoints, e.g. <code>/login, /register, /oauth/token</code> e.t.c. for different user management functions. We wanted our endpoints to be prefixed with <code>/api</code>, so we did some renaming in our <code>stormpath.properties</code> file:</p>
+
+<pre><code>stormpath.web.logout.uri = /api/logout
+stormpath.web.register.uri = /api/register
+stormpath.web.accessToken.uri = /api/oauth/token
+</code></pre>
+
+<p>The property name for the HTTP basic authentication endpoint is <code>stormpath.web.login.uri</code> with a default value of <code>/login</code>.  We prefer to use token authentication.</p>
+
+<p>Our backend API and front-end are located on separate domains, so we needed to specify origins that are allowed to request for access tokens by adding them to the properties file:</p>
+
+<pre><code>stormpath.web.accessToken.origin.authorizer.originUris = http://localhost:3500, https://development-1.distinction.ng
+</code></pre>
+
+<p>The values above are for local development, and we update them based on environment, i.e. development, staging and production. One way of updating the URIs is programmatically via environment variables, which is also <a href="http://12factor.net/">12-Factor App</a> compliant. Additionally, we needed to setup a CORS filter to handle cross-domain communication between the client and server. If you aren&rsquo;t familiar with CORS, MDN has an excellent <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS">write-up</a>. For that, we created a Jersey filter like the following:</p>
+
+<pre><code>import com.stormpath.sdk.servlet.filter.HttpFilter;
+// Imports skipped
+public class CORSStormpathFilter extends HttpFilter {
+
+    @Override
+    protected void filter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws Exception {
+        String origin = request.getHeader(&quot;Origin&quot;);
+
+        // Ensure the origin is allowed based on the environment
+        checkOrigin(origin);
+
+        // Handle CORS preflight
+        if (request.getMethod().equalsIgnoreCase(&quot;OPTIONS&quot;)) {
+            response.setHeader(&quot;Access-Control-Allow-Methods&quot;, &quot;GET, POST, PUT, DELETE, OPTIONS, HEAD&quot;);
+            response.setHeader(&quot;Access-Control-Allow-Headers&quot;,
+                    &quot;origin, content-type, accept, authorization, X-xsrf-token&quot;);
+            response.setHeader(&quot;Access-Control-Max-Age&quot;, &quot;1209600&quot;);
+        }
+        response.setHeader(&quot;Access-Control-Allow-Credentials&quot;, &quot;true&quot;);
+        response.setHeader(&quot;Access-Control-Allow-Origin&quot;, origin);
+
+        super.filter(request, response, chain);
+    }
+}
+</code></pre>
+
+<p>Next, we needed to ensure HTTP requests to Stormpath endpoints pass through <code>CORSStormpathFilter</code>, otherwise they wouldn&rsquo;t work on the browser because of CORS. Again, we added to the properties file:</p>
+
+<pre><code># Create URI filter called cors
+stormpath.web.filters.cors = com.flexisaf.cbt.filter.CORSStormpathFilter
+
+# Specify cors filter for desired endpoints
+stormpath.web.uris./api/logout = cors
+stormpath.web.uris./api/register = cors
+stormpath.web.uris./api/oauth/token = cors
+</code></pre>
+
+<p>With that, our backend API was ready to accept user registration, authenticate users, and perform other functions supported by the Stormpath Java Servlet Plugin.</p>
+
+                </section>
+            </article>
+            <footer id="post-meta" class="clearfix">
+                <a href="https://twitter.com/shuaibiyy">
+                        <img class="avatar" src="https://shuaib.me/images/avatar.png">
+                        <div>
+                            <span class="dark">Shuaib</span>
+                            <span>Is in an endless pursuit of simplicity.</span>
+                        </div>
+                    </a>
+                <section id="sharing">
+                    <a class="twitter" href="https://twitter.com/intent/tweet?text=https%3a%2f%2fshuaib.me%2fstormpath-java-backend%2f - Using%20Stormpath%20on%20a%20Java%20Backend by @shuaibiyy"><span class="icon-twitter"> @shuaibiyy</span></a>
+
+<a class="facebook" href="#" onclick="
+    window.open(
+      'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),
+      'facebook-share-dialog',
+      'width=626,height=436');
+    return false;"><span class="icon-facebook-rect"> Share</span>
+</a>
+
+                </section>
+            </footer>
+
+            <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'callmeninja';
+    var disqus_identifier = 'https:\/\/shuaib.me\/stormpath-java-backend\/';
+    var disqus_title = 'Using Stormpath on a Java Backend';
+    var disqus_url = 'https:\/\/shuaib.me\/stormpath-java-backend\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://shuaib.me/learning-to-rank-places/">Learning to Rank Places for Geospatial Search<aside class="dates">Oct 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ars-cluster-viz/">Visualizing Streets Clustered by Address Layout<aside class="dates">May 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/clustering-ars/">Clustering Address Reference Systems<aside class="dates">Apr 30</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/adversarial-perturbations/">Learning about Adversarial Perturbations<aside class="dates">Dec 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/thread-db-conn-go-server/">Threading a DB Connection through a Go API Server<aside class="dates">Jan 14</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/passing-key-val-prog-args-in-code/">Passing Key-value Program Arguments to Go Programs in Code<aside class="dates">May 25</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ecs-jenkins/">ECS-Powered Jenkins<aside class="dates">May 13</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/">HAProxy Configuration Management with Lambda-Registry and Cosmonaut<aside class="dates">May 8</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/immutable-infrastructure/">On Immutable Infrastructure<aside class="dates">May 6</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/">Overcoming an AWS ECS Deficiency Using Terraform<aside class="dates">Apr 27</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        
+<div id="social">
+    
+    <a class="symbol" href="https://www.github.com/shuaibiyy">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://www.twitter.com/shuaibiyy">
+        circletwitterbird
+    </a>
+    
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2020 Shuaib
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://shuaib.me/js/main.js"></script>
+<script src="https://shuaib.me/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-77015490-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+    </body>
+</html>

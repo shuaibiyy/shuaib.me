@@ -1,0 +1,304 @@
+    <!DOCTYPE html>
+<html lang="en-us">
+	<head>
+		<script type="text/javascript">
+			var host = "shuaib.me";
+			if ((host == window.location.host) && (window.location.protocol != "https:"))
+				window.location.protocol = "https";
+		</script>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="author" content="Shuaib">
+		<meta name="description" content=".">
+		<meta name="generator" content="Hugo 0.15" />
+		<title>Overcoming an AWS ECS Deficiency Using Terraform &middot; This Is Fine</title>
+		<link rel="shortcut icon" href="https://shuaib.me/images/favicon.ico">
+		<link rel="stylesheet" href="https://shuaib.me/css/style.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/highlight.css">
+		<link rel="stylesheet" href="https://shuaib.me/css/monosocialiconsfont.css">
+		<link rel="canonical"  href="https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/" />
+		
+	</head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://shuaib.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		<a href='https://shuaib.me/about'>About</a>
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>Overcoming an AWS ECS Deficiency Using Terraform</h1>
+                    <h2 class="headline">April 27, 2016</h2>
+                </header>
+                <section id="post-body">
+                    <p>While trying to deploy an application using ECS, I hit into a popular deficiency, which is the inability to securely and dynamically supply values to environment variables defined in ECS task definitions. Docker serves that need by providing an &ndash;env-file option for its run command. For ECS however, there are outstanding feature requests that have been raised on Github <a href="https://github.com/aws/amazon-ecs-agent/issues/3">here</a> and <a href="https://github.com/aws/amazon-ecs-agent/issues/247">here</a>. The ECS scheduler being a closed-source system means there&rsquo;s no community to pick up backlog items that AWS engineers may never get around to.</p>
+
+<p>In this particular case, I was lucky enough to already be using <a href="https://www.terraform.io/">Terraform</a> to provision my infrastructure, which made for an easy solution. For those unfamiliar with Terraform, it&rsquo;s a tool from HashiCorp, the creators of Vagrant, that lets you write configurations in a language called HCL, which you can then run to provision resources on any supported cloud provider. Terraform codifies infrastructure, enabling what is known as Infrastructure as Code.</p>
+
+<p>Without further ado, I have a task definition called jenkins.json that initially contained this segment:</p>
+
+<pre><code>{
+  &quot;name&quot;: &quot;jenkins-backup&quot;,
+  &quot;image&quot;: &quot;istepanov/backup-to-s3&quot;,
+  &quot;memory&quot;: 128,
+  &quot;cpu&quot;: 10,
+  &quot;essential&quot;: false,
+  &quot;environment&quot;: [
+    {
+      &quot;name&quot;: &quot;ACCESS_KEY&quot;,
+      &quot;value&quot;: &quot;very_bad_practice&quot;
+    },
+    {
+      &quot;name&quot;: &quot;SECRET_KEY&quot;,
+      &quot;value&quot;: &quot;dont_do_this&quot;
+    },
+    {
+      &quot;name&quot;: &quot;S3_PATH&quot;,
+      &quot;value&quot;: &quot;s3://allhardcode/d/&quot;
+    },
+    {
+      &quot;name&quot;: &quot;CRON_SCHEDULE&quot;,
+      &quot;value&quot;: &quot;0 12 * * *&quot;
+    }
+  ],
+  &quot;mountPoints&quot;: [
+    {
+      &quot;sourceVolume&quot;: &quot;jenkins-home&quot;,
+      &quot;containerPath&quot;: &quot;/data&quot;
+    }
+  ]
+}
+</code></pre>
+
+<p>Clearly, the issue with the task definition above is that it is exposing credentials, and forcing you to hardcode values that you might want to set dynamically. The solution is to use <a href="https://www.terraform.io/docs/providers/template/r/file.html"><strong>Terraform&rsquo;s template_file</strong></a>. We can do that by creating a file called jenkins.json.tpl (the .tpl extension is not required), and it&rsquo;ll contain this:</p>
+
+<pre><code>{
+  &quot;name&quot;: &quot;jenkins-backup&quot;,
+  &quot;image&quot;: &quot;istepanov/backup-to-s3&quot;,
+  &quot;memory&quot;: 128,
+  &quot;cpu&quot;: 10,
+  &quot;essential&quot;: false,
+  &quot;environment&quot;: [
+    {
+      &quot;name&quot;: &quot;ACCESS_KEY&quot;,
+      &quot;value&quot;: &quot;${aws_access_key}&quot;
+    },
+    {
+      &quot;name&quot;: &quot;SECRET_KEY&quot;,
+      &quot;value&quot;: &quot;${aws_secret_key}&quot;
+    },
+    {
+      &quot;name&quot;: &quot;S3_PATH&quot;,
+      &quot;value&quot;: &quot;s3://${s3_bucket}/${s3_path}/&quot;
+    },
+    {
+      &quot;name&quot;: &quot;CRON_SCHEDULE&quot;,
+      &quot;value&quot;: &quot;0 12 * * *&quot;
+    }
+  ],
+  &quot;mountPoints&quot;: [
+    {
+      &quot;sourceVolume&quot;: &quot;jenkins-home&quot;,
+      &quot;containerPath&quot;: &quot;/data&quot;
+    }
+  ]
+}
+</code></pre>
+
+<p>In our Terraform scripts, we declare the template file as a resource:</p>
+
+<pre><code>resource &quot;template_file&quot; &quot;jenkins_task_template&quot; {
+  template = &quot;${file(&quot;jenkins.json.tpl&quot;)}&quot;
+
+  vars {
+    aws_access_key = &quot;${var.aws_access_key}&quot;
+    aws_secret_key = &quot;${var.aws_secret_key}&quot;
+    s3_bucket = &quot;${var.s3_bucket}&quot;
+    s3_path = &quot;${var.s3_path}&quot;
+  }
+}
+</code></pre>
+
+<p>The variable names in the vars section of the template_file definition match the placeholders in jenkins.json.tpl, and their values will be interpolated in the rendered template when it is used by a service like this one:</p>
+
+<pre><code>resource &quot;aws_ecs_task_definition&quot; &quot;jenkins&quot; {
+  family = &quot;jenkins&quot;
+  container_definitions = &quot;${template_file.jenkins_task_template.rendered}&quot;
+
+  volume {
+    name = &quot;jenkins-home&quot;
+    host_path = &quot;/ecs/jenkins-home&quot;
+  }
+}
+</code></pre>
+
+<p>Terraform provides all the means for <a href="https://www.terraform.io/docs/configuration/variables.html">specifying variables</a> that one could ask for, and you can take advantage of them in your ECS task definitions and potentially lots of static configuration files out there. Sounds like a pretty sweet deal to me.</p>
+
+                </section>
+            </article>
+            <footer id="post-meta" class="clearfix">
+                <a href="https://twitter.com/shuaibiyy">
+                        <img class="avatar" src="https://shuaib.me/images/avatar.png">
+                        <div>
+                            <span class="dark">Shuaib</span>
+                            <span>Is in an endless pursuit of simplicity.</span>
+                        </div>
+                    </a>
+                <section id="sharing">
+                    <a class="twitter" href="https://twitter.com/intent/tweet?text=https%3a%2f%2fshuaib.me%2fovercoming-aws-ecs-deficiency-using-terraform%2f - Overcoming%20an%20AWS%20ECS%20Deficiency%20Using%20Terraform by @shuaibiyy"><span class="icon-twitter"> @shuaibiyy</span></a>
+
+<a class="facebook" href="#" onclick="
+    window.open(
+      'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),
+      'facebook-share-dialog',
+      'width=626,height=436');
+    return false;"><span class="icon-facebook-rect"> Share</span>
+</a>
+
+                </section>
+            </footer>
+
+            <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'callmeninja';
+    var disqus_identifier = 'https:\/\/shuaib.me\/overcoming-aws-ecs-deficiency-using-terraform\/';
+    var disqus_title = 'Overcoming an AWS ECS Deficiency Using Terraform';
+    var disqus_url = 'https:\/\/shuaib.me\/overcoming-aws-ecs-deficiency-using-terraform\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://shuaib.me/learning-to-rank-places/">Learning to Rank Places for Geospatial Search<aside class="dates">Oct 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ars-cluster-viz/">Visualizing Streets Clustered by Address Layout<aside class="dates">May 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/clustering-ars/">Clustering Address Reference Systems<aside class="dates">Apr 30</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/adversarial-perturbations/">Learning about Adversarial Perturbations<aside class="dates">Dec 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/thread-db-conn-go-server/">Threading a DB Connection through a Go API Server<aside class="dates">Jan 14</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/passing-key-val-prog-args-in-code/">Passing Key-value Program Arguments to Go Programs in Code<aside class="dates">May 25</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/ecs-jenkins/">ECS-Powered Jenkins<aside class="dates">May 13</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/haproxy-config-mgmt-lambda-registry-cosmonaut/">HAProxy Configuration Management with Lambda-Registry and Cosmonaut<aside class="dates">May 8</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/immutable-infrastructure/">On Immutable Infrastructure<aside class="dates">May 6</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://shuaib.me/overcoming-aws-ecs-deficiency-using-terraform/">Overcoming an AWS ECS Deficiency Using Terraform<aside class="dates">Apr 27</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        
+<div id="social">
+    
+    <a class="symbol" href="https://www.github.com/shuaibiyy">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://www.twitter.com/shuaibiyy">
+        circletwitterbird
+    </a>
+    
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2020 Shuaib
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://shuaib.me/js/main.js"></script>
+<script src="https://shuaib.me/js/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-77015490-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+    </body>
+</html>
